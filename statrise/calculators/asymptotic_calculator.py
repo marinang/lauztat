@@ -91,7 +91,7 @@ class AsymptoticCalculator(Calculator):
 	@CLs.setter	
 	def CLs(self, CLs):
 		if not isinstance(CLs, bool):
-			raise ValueError("CLs must set to True/False, not {0}.".format(CLs)
+			raise ValueError("CLs must set to True/False, not {0}.".format(CLs))
 		self._CLs = CLs
 				
 	def null_likelihood(self):
@@ -210,95 +210,96 @@ class AsymptoticCalculator(Calculator):
 			
 	def _scan_nll(self):
 		
+		poi_values = self._poi_null_val
+		poi_alt    = self._poi_alt_val
+		
+		if not hasattr(poi_values, "__iter__") and isinstance(poi_values, (int,float)):
+			_shape = 1
+		else:
+			_shape = len(poi_values)
+		
+		p_values = {
+					"clsb":   np.zeros(_shape),
+					"clb":    np.zeros(_shape),
+					"exp":    np.zeros(_shape),
+					"exp_p1": np.zeros(_shape),
+					"exp_p2": np.zeros(_shape),
+					"exp_m1": np.zeros(_shape),
+					"exp_m2": np.zeros(_shape)
+					}
+					
+		if self.qtilde:
+			nll_0_null = self.null_nll(0)
+			
+		if not self.onesideddiscovery:
+			bestpoi = self.bestfitpoi
+			nll_poiv_null = self.null_nll(bestpoi)
+		else:
+			nll_poiv_null  = self.null_nll(poi_alt)
+
+		nll_poiv_alt   = self.alt_nll(poi_alt)
+
+		nll_0_alt = self.alt_nll(0)
+		
+		for i, pv in np.ndenumerate(poi_values):
+
+			nll_pv_null = self.null_nll(pv)
+			nll_pv_alt = self.alt_nll(pv)	
+			
+			if self.onesided and poi_alt > pv:
+				qnull = 0
+			elif self.onesideddiscovery and poi_alt < pv:
+				qnull = 0
+			elif poi_alt < 0 and self.qtilde:
+				qnull = 2*(nll_pv_null - nll_0_null)
+			else:
+				qnull = 2*(nll_pv_null - nll_poiv_null)
+				
+			qalt   = 2*(nll_pv_alt - nll_poiv_alt)	
+
+			pnull, palt = Pvalues(qnull, qalt, self.qtilde, self.onesided, self.onesideddiscovery)
+			
+			p_values["clsb"][i] = pnull
+			p_values["clb"][i]  = palt
+			
+			
+			doublesided = not self.onesided and not self.onesideddiscovery
+			
+			if self.onesided or self.onesideddiscovery:
+				p_values["exp"][i] = Expected_Pvalue( qalt, 0, self.CLs)  
+				p_values["exp_p1"][i] = Expected_Pvalue( qalt, 1, self.CLs) 
+				p_values["exp_p2"][i] = Expected_Pvalue( qalt, 2, self.CLs) 
+				p_values["exp_m1"][i] = Expected_Pvalue( qalt, -1,self.CLs) 
+				p_values["exp_m2"][i] = Expected_Pvalue( qalt, -2, self.CLs) 
+			else:
+				pvalues_2sided = Expected_Pvalues_2sided(pnull, palt)
+				p_values["exp"][i] = pvalues_2sided[0] 
+				p_values["exp_p1"][i] = pvalues_2sided[1] 
+				p_values["exp_p2"][i] = pvalues_2sided[2]
+				p_values["exp_m1"][i] = pvalues_2sided[3]
+				p_values["exp_m2"][i] = pvalues_2sided[4]
+				
+		p_values["cls"] = p_values["clsb"] / p_values["clb"]
+					
+		return p_values
+			
+	def pvalues(self):
 		if hasattr(self, "_p_values"):
 			return self._p_values
 		else:
-	
-			poi_values = self._poi_null_val
-			poi_alt    = self._poi_alt_val
-			
-			if not hasattr(poi_values, "__iter__") and isinstance(poi_values, (int,float)):
-				_shape = 1
-			else:
-				_shape = len(poi_values)
-			
-			p_values = {
-						"clsb":   np.zeros(_shape),
-						"clb":    np.zeros(_shape),
-						"exp":    np.zeros(_shape),
-						"exp_p1": np.zeros(_shape),
-						"exp_p2": np.zeros(_shape),
-						"exp_m1": np.zeros(_shape),
-						"exp_m2": np.zeros(_shape)
-						}
-						
-			if self.qtilde:
-				nll_0_null = self.null_nll(0)
-				
-			if not self.onesideddiscovery:
-				bestpoi = self.bestfitpoi
-				nll_poiv_null = self.null_nll(bestpoi)
-			else:
-				nll_poiv_null  = self.null_nll(poi_alt)
-
-			nll_poiv_alt   = self.alt_nll(poi_alt)
-
-			nll_0_alt = self.alt_nll(0)
-			
-			for i, pv in np.ndenumerate(poi_values):
-
-				nll_pv_null = self.null_nll(pv)
-				nll_pv_alt = self.alt_nll(pv)	
-				
-				if self.onesided and poi_alt > pv:
-					qnull = 0
-				elif self.onesideddiscovery and poi_alt < pv:
-					qnull = 0
-				elif poi_alt < 0 and self.qtilde:
-					qnull = 2*(nll_pv_null - nll_0_null)
-				else:
-					qnull = 2*(nll_pv_null - nll_poiv_null)
-					
-				qalt   = 2*(nll_pv_alt - nll_poiv_alt)	
-
-				pnull, palt = Pvalues(qnull, qalt, self.qtilde, self.onesided, self.onesideddiscovery)
-				
-				p_values["clsb"][i] = pnull
-				p_values["clb"][i]  = palt
-				
-				
-				doublesided = not self.onesided and not self.onesideddiscovery
-				
-				if self.onesided or self.onesideddiscovery:
-					p_values["exp"][i] = Expected_Pvalue( qalt, 0, self.CLs)  
-					p_values["exp_p1"][i] = Expected_Pvalue( qalt, 1, self.CLs) 
-					p_values["exp_p2"][i] = Expected_Pvalue( qalt, 2, self.CLs) 
-					p_values["exp_m1"][i] = Expected_Pvalue( qalt, -1,self.CLs) 
-					p_values["exp_m2"][i] = Expected_Pvalue( qalt, -2, self.CLs) 
-				else:
-					pvalues_2sided = Expected_Pvalues_2sided(pnull, palt)
-					p_values["exp"][i] = pvalues_2sided[0] 
-					p_values["exp_p1"][i] = pvalues_2sided[1] 
-					p_values["exp_p2"][i] = pvalues_2sided[2]
-					p_values["exp_m1"][i] = pvalues_2sided[3]
-					p_values["exp_m2"][i] = pvalues_2sided[4]
-					
-			p_values["cls"] = p_values["clsb"] / p_values["clb"]
-			
-			self._p_values = p_values
-			
+			self._p_values = self._scan_nll()
 			return self._p_values
 			
 	def upperlimit(self, alpha = 0.05, printlevel = 1):
 		
 		poi_name = self._poi.name
-		p_values = self._scan_nll(self.CLs)
+		p_values = self.pvalues()
 		poi_values = self._poi_null_val
 		poi_alt    = self._poi_alt_val
 		
 		bestpoi = self.bestfitpoi
 		
-		if CLs:
+		if self.CLs:
 			p_ = p_values["cls"] 
 		else:
 			p_ = p_values["clsb"]
@@ -326,20 +327,58 @@ class AsymptoticCalculator(Calculator):
 		bands["band_m1"] = Expected_POI(poi_alt, sigma, -1.0, alpha, self.CLs)
 		bands["band_m2"] = Expected_POI(poi_alt, sigma, -2.0, alpha, self.CLs)
 		
-		print("Observed upper limit: {0} = {1}".format(poi_name, poi_ul))
-		print("Expected upper limit: {0} = {1}".format(poi_name, bands["median"]))
-		print("Expected upper limit +1 sigma: {0} = {1}".format(poi_name, bands["band_p1"]))
-		print("Expected upper limit -1 sigma: {0} = {1}".format(poi_name, bands["band_m1"]))
-		print("Expected upper limit +2 sigma: {0} = {1}".format(poi_name, bands["band_p2"]))
-		print("Expected upper limit -2 sigma: {0} = {1}".format(poi_name, bands["band_m2"]))
+		if printlevel > 0:
+		
+			print("Observed upper limit: {0} = {1}".format(poi_name, poi_ul))
+			print("Expected upper limit: {0} = {1}".format(poi_name, bands["median"]))
+			print("Expected upper limit +1 sigma: {0} = {1}".format(poi_name, bands["band_p1"]))
+			print("Expected upper limit -1 sigma: {0} = {1}".format(poi_name, bands["band_m1"]))
+			print("Expected upper limit +2 sigma: {0} = {1}".format(poi_name, bands["band_p2"]))
+			print("Expected upper limit -2 sigma: {0} = {1}".format(poi_name, bands["band_m2"]))
 		
 		bands["observed"] = poi_ul
 		
 		return bands
 		
+	def result(self, alpha = 0.05, printlevel = 1):
+		
+		poi_alt = self._poi_alt_val
+		
+		nll_0_null = self.null_nll(0)
+		nll_0_alt  = self.alt_nll(0)
+					
+		if not self.onesideddiscovery:
+			bestpoi = self.bestfitpoi
+			nll_poiv_null = self.null_nll(bestpoi)
+		else:
+			nll_poiv_null  = self.null_nll(poi_alt)
+
+		nll_poiv_alt   = self.alt_nll(poi_alt)
+		
+		qnull  = 2*(nll_0_null - nll_poiv_null)
+		qalt   = 2*(nll_0_alt - nll_poiv_alt)
+		
+		pnull, palt = Pvalues(qnull, qalt, self.qtilde, self.onesided, self.onesideddiscovery)
+		
+		clsb = palt
+		clb  = pnull
+		cls  = clsb / clb
+		if self.onesided or self.onesided:
+			Z = norm.ppf(1. - pnull)
+		else:
+			Z = norm.ppf(1. - pnull/2.)
+			
+		if printlevel > 0:
+			
+			print("p_value for the Null hypothesis = {0}".format(pnull))
+			print("Significance = {0}".format(Z))
+			print("CL_b = {0}".format(clb))
+			print("CL_s+b = {0}".format(clsb))
+			print("CL_s = {0}".format(cls))
+				
 	def plot(self, alpha = 0.05, ax = None, show = True, **kwargs):
 		
-		p_values = self._scan_nll()
+		p_values = self.pvalues()
 		poi_values = self._poi_null_val
 		poi_alt    = self._poi_alt_val
 		
@@ -347,8 +386,8 @@ class AsymptoticCalculator(Calculator):
 			fig, ax = plt.subplots(figsize=(10,8))
 			
 		if self.CLs:
-		_ = ax.plot(poi_values, p_values["cls"], label = "Observed CL$_{s}$", marker = ".", color='k', markerfacecolor = "r",
-					markeredgecolor = "r", linewidth = 2.0, ms = 11)
+			_ = ax.plot(poi_values, p_values["cls"], label = "Observed CL$_{s}$", marker = ".", color='k', markerfacecolor = "r",
+						markeredgecolor = "r", linewidth = 2.0, ms = 11)
 		_ = ax.plot(poi_values, p_values["clsb"], label = "Observed CL$_{s+b}$", marker = ".", color='k', markerfacecolor = "b",
 					markeredgecolor = "b", linewidth = 2.0, ms = 11, linestyle=":")	
 		_ = ax.plot(poi_values, p_values["clb"], label = "Observed CL$_{b}$", marker = ".", color='k', markerfacecolor = "k",
