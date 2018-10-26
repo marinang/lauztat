@@ -1,2 +1,2 @@
 # statrise
-Pure python statistics tools for high energy physics.
+Pure python statistics tools for high energy physics, based on iminuit.
