@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from iminuit import describe
+
 ############################# Parameters ##################################
 
 class Object:
@@ -45,6 +47,8 @@ class Constant(Named):
 	def __init__(self, name, value):
 		super().__init__(name=name)
 		
+		if not isinstance(value, (int,float)):
+			raise TypeError("Please provide a number (int/float).")
 		self._value = value
 		
 	@property
@@ -54,7 +58,7 @@ class Constant(Named):
 	@value.setter
 	def value(self, _value):
 		if not isinstance(_value, (int,float)):
-			raise ValueError("Please provide a number (int/float).")
+			raise TypeError("Please provide a number (int/float).")
 		self._value = _value
 		
 	def tominuit(self):
@@ -68,13 +72,19 @@ class Constant(Named):
 					
 class Variable(Named, Range):
 	
-	def __init__(self, name, range=None, initvalue=None, initstep=None, constraint=None):
+	def __init__(self, name, range, initvalue=None, initstep=None, constraint=None):
 		super().__init__(name=name, range=range)
 		
 		self._initvalue = check_initvalue(initvalue, range)
 		self._initstep = check_initstep(initstep, range)
-		check_contraint(constraint)
+		check_constraint(constraint)
 		self._constraint = constraint
+		
+	@Range.range.setter
+	def range(self, _range):
+		check_range(_range)
+		self._range = _range
+		self._initvalue = check_initvalue(None, _range)
 		
 	@property
 	def initvalue(self):
@@ -89,8 +99,8 @@ class Variable(Named, Range):
 	def initstep(self):
 		return self._initstep
 		
-	@initvalue.setter
-	def initvalue(self, _initstep):
+	@initstep.setter
+	def initstep(self, _initstep):
 		check_initstep(_initstep, self.range)
 		self._initstep = _initstep
 		
@@ -101,7 +111,7 @@ class Variable(Named, Range):
 	@constraint.setter
 	def constraint(self, _constraint):
 		check_constraint(_constraint)
-		sself._constraint = _constraint
+		self._constraint = _constraint
 		
 	def tominuit(self):
 		ret = {}
@@ -120,13 +130,17 @@ class Variable(Named, Range):
 				
 def check_range(_range):
 	if _range and not (isinstance(_range, (list, tuple)) and len(_range) == 2 and all(isinstance(v, (float, int)) for v in _range)):
-		raise ValueError("Please provide a tuple/list with lower and upper limits for the range of this parameter.")
+		raise TypeError("Please provide a tuple/list with lower and upper limits for the range of this parameter.")
+	if _range[0] >= _range[1]:
+		raise ValueError("Lower limit of the range should be strictly lower the the upper limit.")
 		
 def check_initvalue(_initvalue, _range):
 	if _range:
 		if _initvalue != None:
-			if not (isinstance(_initvalue, (int, float)) and _initvalue >= _range[0] and _initvalue <= _range[1]):
-				raise ValueError("Please provide a number (int/float) between given range: {0}.".format(_range))
+			if not isinstance(_initvalue, (int, float)):
+				raise TypeError("Please provide a number (int/float)")
+			elif not(_initvalue >= _range[0] and _initvalue <= _range[1]):
+				raise ValueError("Please provide a number between given range: {0}.".format(_range))
 			else:
 				return _initvalue
 		else:
@@ -137,7 +151,9 @@ def check_initvalue(_initvalue, _range):
 def check_initstep(_initstep, _range):
 	if _initstep != None:
 		if not isinstance(_initstep, (int, float)):
-			raise ValueError("Please provide a a number (int/float) for the initial step of this parameter.")
+			raise TypeError("Please provide a a number (int/float) for the initial step of this parameter.")
+		if _initstep >= (_range[1] - _range[0]):
+			raise ValueError("Initial step should be strictly lower than the range:{0}.".format(_range))
 		else:
 			return _initstep
 	else:
@@ -146,17 +162,17 @@ def check_initstep(_initstep, _range):
 		else:
 			raise ValueError("Please provide a range for this paramater.")
 				
-def check_contraint( _constraint ):
+def check_constraint( _constraint ):
 	if _constraint:
 		if hasattr(_constraint, "__call__"):
 			pars = describe(_constraint)
 			if len(pars) > 1:
-				raise ValueError("Please provide a function with of single argument.")
+				raise TypeError("Please provide a function with of single argument.")
 				
 			test_return = _constraint(0.0)
 			if not isinstance(test_return, (int, float)):
 				raise ValueError("Please provide a function that returns a number (int/float).")
 		else:
-			raise ValueError("Please provide a function with one argument returning a number (int/float).")
+			raise TypeError("Please provide a function with one argument returning a number (int/float).")
 										
 

@@ -1,2 +1,6 @@
 *.pyc
 statrise/.ipynb_checkpoints/
+*egg*
+build/
+dist/
+.pytest_cache/

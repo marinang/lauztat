@@ -3,7 +3,7 @@
 import inspect
 import collections
 import iminuit
-from parameters import Observable, Variable, Constant
+from .parameters import Observable, Variable, Constant
 
 
 ########################### MODEL ###########################
