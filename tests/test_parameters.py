@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import pytest
 
-from statrise.parameters import Object, Named, Range, Observable, Variable, Constant
+from statnight.parameters import Object, Named, Range, Observable, Variable, Constant
 
 def test_constructors():	
 	o = Object()
