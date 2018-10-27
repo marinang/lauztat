@@ -4,7 +4,7 @@ from iminuit import describe
 
 ############################# Parameters ##################################
 
-class Object:
+class Object(object):
 	def __init__(self, **kwargs):
 		pass
 
