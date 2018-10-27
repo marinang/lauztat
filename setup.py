@@ -21,7 +21,7 @@ setup(  name = "statnight",
 	download_url = "",
 	license = "",
 	test_suite = "tests",
-	install_requires = ["iminuit", "probfit", "numpy", "scipy"],
+	install_requires = ["iminuit", "numpy", "scipy"],
 	setup_requires = ["pytest-runner"],
 	tests_require = ["pytest"],
 	classifiers = [
@@ -38,3 +38,4 @@ setup(  name = "statnight",
 			],
 	platforms = "Any",
 		)
+		

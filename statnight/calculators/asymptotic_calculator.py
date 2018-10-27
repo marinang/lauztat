@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 from .calculator import Calculator
-import probfit
 import iminuit
 import math
 from scipy.stats import norm
@@ -9,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.optimize import brentq
+from ..utils.stats import integrate1d
 
 class AsymptoticCalculator(Calculator):
 	
@@ -93,31 +93,17 @@ class AsymptoticCalculator(Calculator):
 		if not isinstance(CLs, bool):
 			raise ValueError("CLs must set to True/False, not {0}.".format(CLs))
 		self._CLs = CLs
-				
-	def null_likelihood(self):
-		if hasattr(self, "_null_likelihood"):
-			return self._null_likelihood
-		else:
-			self._null_likelihood = get_likelihood(self.null_hypothesis, self.data)
-			return self._null_likelihood
-			
-	def alt_likelihood(self):
-		if hasattr(self, "_alt_likelihood"):
-			return self._alt_likelihood
-		else:
-			self._alt_likelihood = get_likelihood(self.alt_hypothesis, self.data)
-			return self._alt_likelihood
-			
+							
 	def null_minuit(self):
 		if hasattr(self, "_null_minuit"):
 			return self._null_minuit
 		else:
 			if self._poi.name in self.null_hypothesis.poinames():
 				hypo = self.null_hypothesis
-				lh = self.null_likelihood()
 			elif self._poi.name in self.alt_hypothesis.poinames():
 				hypo = self.alt_hypothesis
-				lh = self.alt_likelihood()
+				
+			lh = hypo.nll_function(self.data, weights=None)
 			
 			params = {}
 			
@@ -125,7 +111,7 @@ class AsymptoticCalculator(Calculator):
 				pars = v.tominuit()
 				params.update(pars)
 
-			self._null_minuit = iminuit.Minuit(lh, **params, pedantic=False)
+			self._null_minuit = iminuit.Minuit(lh, **params, pedantic=True, errordef=0.5)
 			return self._null_minuit
 			
 	def asy_minuit(self):
@@ -137,7 +123,7 @@ class AsymptoticCalculator(Calculator):
 			elif self._poi.name in self.alt_hypothesis.poinames():
 				hypo = self.alt_hypothesis
 				
-			asy_likelihood = get_likelihood(hypo, self.asymov_dataset()[0], weights=self.asymov_dataset()[1])
+			asy_likelihood = hypo.nll_function(self.asymov_dataset()[0], weights=self.asymov_dataset()[1])
 			self._asy_likelihood = asy_likelihood 
 			
 			params = {}
@@ -146,7 +132,7 @@ class AsymptoticCalculator(Calculator):
 				pars = v.tominuit()
 				params.update(pars)
 				
-			self._asy_minuit = iminuit.Minuit(asy_likelihood, **params, pedantic=False)
+			self._asy_minuit = iminuit.Minuit(asy_likelihood, **params, pedantic=False, errordef=0.5)
 			return self._asy_minuit
 	
 	@property			
@@ -171,7 +157,7 @@ class AsymptoticCalculator(Calculator):
 		if hasattr(self, "_asymov_dataset"):
 			return self._asymov_dataset	
 		else:
-			alt_LH = self.alt_likelihood()
+			alt_LH = self.alt_hypothesis.nll_function(self.data, weights=None)
 			params = {}
 			
 			for v in self.alt_hypothesis.variables:
@@ -182,7 +168,7 @@ class AsymptoticCalculator(Calculator):
 					poiv = self._poi_alt_val
 					params["{0}".format(self._poi.name)] = poiv
 
-			minuit_alt =  iminuit.Minuit(alt_LH, **params, pedantic=False)
+			minuit_alt =  iminuit.Minuit(alt_LH, **params, pedantic=False, errordef=0.5)
 			minuit_alt.migrad()
 			
 			pdf_alt = self.alt_hypothesis.pdf
@@ -408,16 +394,6 @@ class AsymptoticCalculator(Calculator):
 			
 					
 #################################################################################################
-
-def get_likelihood(hypo, data, weights=None):
-	
-	if len(hypo.ext_pars) > 0:
-		bounds = hypo.obs[0].range
-		likelihood = probfit.UnbinnedLH(hypo.pdf, data, extended=True, extended_bound=bounds, weights=weights)
-	else:
-		likelihood = probfit.UnbinnedLH(hypo.pdf, data, weights=weights)
-				
-	return likelihood
 				
 def generate_asymov_dataset(pdf, params_values, bounds, nbins=100):
 	
@@ -429,7 +405,7 @@ def generate_asymov_dataset(pdf, params_values, bounds, nbins=100):
 			args.append(params_values[p])
 		args = tuple(args)
 
-		ret = probfit.integrate1d(pdf, (bin_low, bin_high), 100, args)
+		ret = integrate1d(pdf, (bin_low, bin_high), 100, *args)
 		
 		return ret
 		

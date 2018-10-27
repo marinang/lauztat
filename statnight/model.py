@@ -4,6 +4,7 @@ import inspect
 import collections
 import iminuit
 from .parameters import Observable, Variable, Constant
+from .utils.stats import compute_nll, integrate1d
 
 
 ########################### MODEL ###########################
@@ -174,6 +175,28 @@ class Model:
 			duplicates = list(set(duplicates))
 			raise ValueError("{0} cannot be both in observables and in variables!".format(duplicates))
 			
+	#############################################################################
+			
+	def nll_function(self, data, weights=None):
+		
+		def compute_null(*args):
+			
+			nll = compute_nll(self.pdf, data, weights, *args)
+	
+			if self.extended:
+				nll += integrate1d(self.pdf, self.obs[0].range, 100, *args)
+			
+			for v in self.variables:
+				pass
+				
+			return nll
+			
+		doc = "def f("+",".join(self._vars_names())+")"
+			
+		compute_null.__doc__= doc
+			
+		return compute_null
+			
 ########################### HYPOTHESIS ###########################
 			
 class Hypothesis:
@@ -255,8 +278,9 @@ class Hypothesis:
 		ret += self._summary()
 		return ret
 		
-
-
+	def nll_function(self, data, weights=None):
+		return self.model.nll_function(data, weights)
+		
 
 ########################### UTILITIEs ###########################
 			
