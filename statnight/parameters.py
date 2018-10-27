@@ -11,7 +11,7 @@ class Object:
 class Named(Object):
 	def __init__(self, **kwargs):
 		name = kwargs["name"]
-		super().__init__(**kwargs)
+		super(Named, self).__init__(**kwargs)
 		self._name = name
 			
 	@property
@@ -21,7 +21,7 @@ class Named(Object):
 class Range(Object):
 	def __init__(self, **kwargs):
 		range = kwargs["range"]
-		super().__init__(**kwargs)
+		super(Range, self).__init__(**kwargs)
 		check_range(range)
 		self._range = range
 							
@@ -37,7 +37,7 @@ class Range(Object):
 class Observable(Named, Range):
 	
 	def __init__(self, name, range):
-		super().__init__(name=name, range=range)
+		super(Observable, self).__init__(name=name, range=range)
 						
 	def __repr__(self):
 		return "Observable('{0}', range={1})".format(self.name, self.range)
@@ -45,7 +45,7 @@ class Observable(Named, Range):
 class Constant(Named):
 	
 	def __init__(self, name, value):
-		super().__init__(name=name)
+		super(Constant, self).__init__(name=name)
 		
 		if not isinstance(value, (int,float)):
 			raise TypeError("Please provide a number (int/float).")
@@ -73,7 +73,7 @@ class Constant(Named):
 class Variable(Named, Range):
 	
 	def __init__(self, name, range, initvalue=None, initstep=None, constraint=None):
-		super().__init__(name=name, range=range)
+		super(Variable, self).__init__(name=name, range=range)
 		
 		self._initvalue = check_initvalue(initvalue, range)
 		self._initstep = check_initstep(initstep, range)
