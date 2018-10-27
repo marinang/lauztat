@@ -111,7 +111,7 @@ class AsymptoticCalculator(Calculator):
 				pars = v.tominuit()
 				params.update(pars)
 
-			self._null_minuit = iminuit.Minuit(lh, **params, pedantic=True, errordef=0.5)
+			self._null_minuit = iminuit.Minuit(lh, pedantic=True, errordef=0.5, **params)
 			return self._null_minuit
 			
 	def asy_minuit(self):
@@ -132,7 +132,7 @@ class AsymptoticCalculator(Calculator):
 				pars = v.tominuit()
 				params.update(pars)
 				
-			self._asy_minuit = iminuit.Minuit(asy_likelihood, **params, pedantic=False, errordef=0.5)
+			self._asy_minuit = iminuit.Minuit(asy_likelihood, pedantic=False, errordef=0.5, **params)
 			return self._asy_minuit
 	
 	@property			
@@ -168,7 +168,7 @@ class AsymptoticCalculator(Calculator):
 					poiv = self._poi_alt_val
 					params["{0}".format(self._poi.name)] = poiv
 
-			minuit_alt =  iminuit.Minuit(alt_LH, **params, pedantic=False, errordef=0.5)
+			minuit_alt =  iminuit.Minuit(alt_LH, pedantic=False, errordef=0.5, **params)
 			minuit_alt.migrad()
 			
 			pdf_alt = self.alt_hypothesis.pdf
