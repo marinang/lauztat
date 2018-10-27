@@ -158,7 +158,7 @@ def check_initstep(_initstep, _range):
 			return _initstep
 	else:
 		if _range:
-			return (_range[1] - _range[0])/100
+			return (_range[1] - _range[0])/100.
 		else:
 			raise ValueError("Please provide a range for this paramater.")
 				
