@@ -6,6 +6,14 @@ import os.path
 from setuptools import find_packages
 from setuptools import setup
 
+major, minor = sys.version_info[:2]
+
+if major >= 3 and minor >= 5:
+	ir = ["iminuit", "numpy", "scipy", "matplotlib"]
+else:
+	ir = ["iminuit", "numpy", "scipy", "matplotlib<3.0"]
+
+
 setup(  name = "statnight",
 	version = "v1.0",
 	packages = find_packages(exclude = ["tests"]),
@@ -21,7 +29,7 @@ setup(  name = "statnight",
 	download_url = "",
 	license = "",
 	test_suite = "tests",
-	install_requires = ["iminuit", "numpy", "scipy", "matplotlib"],
+	install_requires = ir,
 	setup_requires = ["pytest-runner"],
 	tests_require = ["pytest"],
 	classifiers = [
