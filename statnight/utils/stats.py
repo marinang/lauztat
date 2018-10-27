@@ -8,7 +8,7 @@ def likelihood( function, badvalue = 100000):
 		return val
 	return value
 
-def compute_nll( function, data, weights, *args, badvalue=100000):
+def compute_nll( function, data, weights, *args):
 				
 	lh = likelihood(function, badvalue)
 		
