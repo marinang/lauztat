@@ -17,7 +17,7 @@ else:
 	ir += ["matplotlib<3.0"]
 	
 tr += ["attrs>=18.2.0"]
-#tr.append("jsonschema>=v3.0.0a2")
+tr += ["jsonschema>=v3.0"]
 
 if major == 2 and minor == 7:
 	tr += ["ipykernel<5.0.0"]
