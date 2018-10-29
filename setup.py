@@ -15,9 +15,13 @@ if major >= 3 and minor >= 5:
 else:
 	ir = ["iminuit", "numpy", "scipy", "matplotlib<3.0"]
 	
-if major >= 3 and minor > 2:
+if major == 3 and minor == 2:
+	tr.append("attrs==17.4.0")
+elif minor == 2 and minor == 7:
+	tr.append("ipykernel<5.1.0")
+	
+if major >= 3 and minor > 4:
 	pass
-#	tr.append("ipython<7.0")
 else:
 	tr.append("ipython<6.0")
 
