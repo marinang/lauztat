@@ -13,6 +13,7 @@ python:
 
 install:
   - pip install ipython
+  - pip install jupyter_client
   - pip install -e . 
   - pip install --only-binary=numpy,scipy numpy scipy
 
