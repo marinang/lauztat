@@ -12,8 +12,6 @@ python:
   - 3.6
 
 install:
-  - pip install "ipython<6.0"
-  - pip install jupyter_client
   - pip install -e . 
   - pip install --only-binary=numpy,scipy numpy scipy
 

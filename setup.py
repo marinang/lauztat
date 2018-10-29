@@ -16,13 +16,12 @@ if major >= 3 and minor >= 5:
 	ir += ["matplotlib"]
 else:
 	ir += ["matplotlib<3.0"]
-
-if major == 2 and minor == 7:
-	tr += ["jupyter-console<=5.0.0"]
 	
 if major < 3 or (major == 3 and minor <= 4):
+	ir += ["ipython<6.0"]
 	tr += ["ipython<6.0"]
 	tr += ["ipykernel<5.0.0"]
+	tr += ["jupyter-console<=5.0.0"]
 
 setup(  name = "statnight",
 	version = "1.0",
