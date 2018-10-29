@@ -12,10 +12,10 @@ python:
   - 3.6
 
 install:
-  pip install --only-binary=numpy,scipy numpy scipy
-  pip install ipython
-  pip install .
-
+  - pip install . 
+  - pip install --only-binary=numpy,scipy numpy scipy
+  - pip install ipython
+ 
 script:
   python setup.py test
 
