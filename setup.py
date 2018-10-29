@@ -8,10 +8,17 @@ from setuptools import setup
 
 major, minor = sys.version_info[:2]
 
+tr = ["pytest","jupyter", "papermill"]
+
 if major >= 3 and minor >= 5:
 	ir = ["iminuit", "numpy", "scipy", "matplotlib"]
 else:
 	ir = ["iminuit", "numpy", "scipy", "matplotlib<3.0"]
+	
+if major >= 3 and minor > 2:
+	tr.append("ipython<7.0")
+else:
+	tr.append("ipython<5.0")
 
 
 setup(  name = "statnight",
@@ -31,7 +38,7 @@ setup(  name = "statnight",
 	test_suite = "tests",
 	install_requires = ir,
 	setup_requires = ["pytest-runner"],
-	tests_require = ["pytest","jupyter", "papermill", "ipython<7", "jsonschema>=v3.0.0a2"],
+	tests_require = ,
 	classifiers = [
 			"Intended Audience :: Science/Research",
 			"Operating System :: MacOS",
