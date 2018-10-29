@@ -16,9 +16,10 @@ else:
 	ir = ["iminuit", "numpy", "scipy", "matplotlib<3.0"]
 	
 if major >= 3 and minor > 2:
-	tr.append("ipython<7.0")
+	pass
+#	tr.append("ipython<7.0")
 else:
-	tr.append("ipython<5.0")
+	tr.append("ipython<6.0")
 
 
 setup(  name = "statnight",
