@@ -242,12 +242,14 @@ class AsymptoticCalculator(Calculator):
 				qnull = 2*(nll_pv_null - nll_poiv_null)
 				
 			qalt   = 2*(nll_pv_alt - nll_poiv_alt)	
-
+			
+			if qalt < 0:
+				qalt = 0.0001
+				
 			pnull, palt = Pvalues(qnull, qalt, self.qtilde, self.onesided, self.onesideddiscovery)
 			
 			p_values["clsb"][i] = pnull
 			p_values["clb"][i]  = palt
-			
 			
 			doublesided = not self.onesided and not self.onesideddiscovery
 			

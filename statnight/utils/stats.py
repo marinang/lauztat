@@ -10,7 +10,7 @@ def likelihood( function, badvalue = 100000):
 
 def compute_nll( function, data, weights, *args):
 				
-	lh = likelihood(function, badvalue)
+	lh = likelihood(function, badvalue = 1000000)
 		
 	vlh = np.vectorize(lh,  otypes=[float])
 	

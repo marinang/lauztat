@@ -15,7 +15,7 @@ else:
 
 
 setup(  name = "statnight",
-	version = "v1.0",
+	version = "1.0",
 	packages = find_packages(exclude = ["tests"]),
 	scripts = [],
 	data_files = ["README.md"],
