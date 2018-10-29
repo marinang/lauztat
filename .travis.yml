@@ -14,7 +14,7 @@ python:
 install:
   - pip install . 
   - pip install --only-binary=numpy,scipy numpy scipy
- 
+ 	
 script:
   python setup.py test
 

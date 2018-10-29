@@ -16,14 +16,15 @@ if major >= 3 and minor >= 5:
 else:
 	ir += ["matplotlib<3.0"]
 	
-tr.append("attrs>=18.1.0")
+tr += ["attrs>=18.4.0"]
 #tr.append("jsonschema>=v3.0.0a2")
 
 if major == 2 and minor == 7:
-	tr.append("ipykernel<5.0.0")
-	tr.append("jupyter-console<=5.0.0")	
-elif major <= 3 and minor <= 4:
-	tr.append("ipython<6.0")
+	tr += ["ipykernel<5.0.0"]
+	tr += ["jupyter-console<=5.0.0"]
+	
+if major <= 3 and minor <= 4:
+	tr += ["ipython<6.0"]
 
 
 setup(  name = "statnight",
