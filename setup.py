@@ -9,16 +9,17 @@ from setuptools import setup
 major, minor = sys.version_info[:2]
 
 tr = ["pytest", "jupyter", "papermill"]
+ir = ["iminuit", "numpy", "scipy"]
 
 if major >= 3 and minor >= 5:
-	ir = ["iminuit", "numpy", "scipy", "matplotlib"]
+	ir += ["matplotlib"]
 else:
-	ir = ["iminuit", "numpy", "scipy", "matplotlib<3.0"]
+	ir += ["matplotlib<3.0"]
 	
-if major == 3 and minor == 2:
-	tr.append("attrs==17.4.0")
-	tr.append("jsonschema>=v3.0.0a2")
-elif major == 2 and minor == 7:
+tr.append("attrs==17.4.0")
+tr.append("jsonschema>=v3.0.0a2")
+
+if major == 2 and minor == 7:
 	tr.append("ipykernel<5.0.0")
 	tr.append("jupyter-console<=5.0.0")	
 elif major <= 3 and minor <= 4:
