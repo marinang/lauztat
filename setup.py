@@ -20,11 +20,8 @@ if major == 3 and minor == 2:
 	tr.append("jsonschema>=v3.0.0a2")
 elif major == 2 and minor == 7:
 	tr.append("ipykernel<5.0.0")
-	tr.append("jupyter-console<=5.0.0")
-	
-if major >= 3 and minor > 4:
-	pass
-else:
+	tr.append("jupyter-console<=5.0.0")	
+elif major <= 3 and minor <= 4:
 	tr.append("ipython<6.0")
 
 
