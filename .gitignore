@@ -1,5 +1,5 @@
 *.pyc
-statnight/.ipynb_checkpoints/
+*checkpoint*
 *egg*
 build/
 dist/
