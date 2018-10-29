@@ -23,7 +23,7 @@ if major == 2 and minor == 7:
 	tr += ["ipykernel<5.0.0"]
 	tr += ["jupyter-console<=5.0.0"]
 	
-if major <= 3 and minor <= 4:
+if major < 3:
 	tr += ["ipython<6.0"]
 
 
