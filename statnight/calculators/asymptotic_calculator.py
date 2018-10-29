@@ -15,7 +15,7 @@ class AsymptoticCalculator(Calculator):
 	def __init__(self, null_hypothesis, alt_hypothesis, data, qtilde=False, onesided=True, 
 				 onesideddiscovery=False, CLs=True):
 		
-		super().__init__(null_hypothesis, alt_hypothesis, data)
+		super(AsymptoticCalculator, self).__init__(null_hypothesis, alt_hypothesis, data)
 				
 		if len(null_hypothesis.pois) > 1 or len(alt_hypothesis.pois) > 1:
 			raise ValueError("Asymptotic calculator valid only for one paramater of interest.")
