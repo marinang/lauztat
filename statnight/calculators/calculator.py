@@ -2,7 +2,7 @@
 
 import numpy as np
 
-class Calculator:
+class Calculator(object):
 	
 	def __init__(self, null_hypothesis, alt_hypothesis, data = []):
 		""" __init__ function """
