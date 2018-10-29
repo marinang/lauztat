@@ -13,13 +13,13 @@ class Calculator:
 		if not isHypothesis(alt_hypothesis):
 			raise ValueError("Invalid type, {0}, for alternate hypothesis. Hypothesis required".format(alt_hypothesis.__class__.__name__))
 			
-		pois_in_null = ( len(null_hypothesis.obs) > 0 and len(null_hypothesis.pois) > 0 and len(null_hypothesis.nuis) > 0)
-		pois_in_alt  = ( len(alt_hypothesis.obs) > 0 and len(alt_hypothesis.pois) > 0 and len(alt_hypothesis.nuis) > 0)
+		pois_in_null = ( len(null_hypothesis.model.obs) > 0 and len(null_hypothesis.pois) > 0 and len(null_hypothesis.nuis) > 0)
+		pois_in_alt  = ( len(alt_hypothesis.model.obs) > 0 and len(alt_hypothesis.pois) > 0 and len(alt_hypothesis.nuis) > 0)
 		
 		if not( pois_in_null or pois_in_alt ):
-			print(null_hypothesis.summary)
-			print(alt_hypothesis.summary)
-			raise NotImplementedError("At least one parameter of interest is required in one of the hypothesis.")
+			print(null_hypothesis.summary())
+			print(alt_hypothesis.summary())
+			raise ValueError("At least one parameter of interest is required in one of the hypothesis.")
 			
 		self._null_hypothesis = null_hypothesis	
 		self._alt_hypothesis = alt_hypothesis

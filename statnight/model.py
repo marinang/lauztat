@@ -238,35 +238,39 @@ class Hypothesis:
 			raise ValueError("Unknown parameters {0} not in {1}".format(unknown_pois, model.vars_names()))
 		
 		self._model = model
-		self._pois  = pois			
-		self._nuis = [v for v in self.variables if not v.name in self.poinames()]
+		self._pois  = [model[p] for p in pois.keys()]	
+		self._poivalues = pois	
+		self._nuis = [v for v in model.variables if not v.name in self.poinames]
 		
 	@property
 	def pois( self ):
 		return self._pois
-		
+	
+	@property
+	def poivalues( self ):
+		return dict(self._poivalues)
+	
+	@property	
 	def poinames( self ):
-		return list(self._pois.keys())
+		return [p.name for p in self.pois]
 		
 	@property
 	def parametersofinterest( self ):
 		return self.pois
 		
 	def getpoi(self, name):
-		return self.pois[name]
 		
+		if name not in self.poinames:
+			raise KeyError("Unknown parameter {0} not in {1}".format(name, self.poinames))
+		else:
+			for p in self.pois:
+				if p.name == name:
+					return p
+				
 	@property
 	def model( self ):
 		return self._model
-		
-	@property
-	def obs( self ):
-		return self.model.obs
-		
-	@property
-	def observables( self ):
-		return self.obs
-		
+				
 	@property
 	def nuis( self ):
 		return self._nuis
@@ -274,46 +278,30 @@ class Hypothesis:
 	@property
 	def nuisanceparameters( self ):
 		return self.nuis
-		
+	
+	@property	
 	def nuisnames( self ):
 		return [n.name for n in self.nuis]
-		
-	@property
-	def ext_pars( self ):
-		return self.model.ext_pars
-		
-	@property
-	def variables( self ):
-		return self.model.vars
-		
-	@property
-	def pdf( self ):
-		return self.model.pdf
-		
+								
 	def _summary(self):
 		
 		obs_names = self.model.obs_names()
 		nuis_names = [n.name for n in self.nuis]
 		
 		toprint  = "Observables: {0}\n".format(obs_names)
-		toprint += "Paramaters of interest: {0}\n".format(self.pois)
+		toprint += "Paramaters of interest: {0}\n".format(self.poivalues)
 		toprint += "Nuisance parameters: {0}\n".format(nuis_names)
-		toprint += "Extended parameters: {0}\n".format(self.ext_pars)
+		toprint += "Extended parameters: {0}\n".format(self.model.ext_pars)
 							
 		return toprint
 		
-	@property
 	def summary(self):
 		print(self._summary())
 		
 	def __repr__(self):
 		ret = "Hypothesis object: \n"
 		ret += self._summary()
-		return ret
-		
-	def nll_function(self, data, weights=None):
-		return self.model.nll_function(data, weights)
-		
+		return ret		
 
 ########################### UTILITIEs ###########################
 

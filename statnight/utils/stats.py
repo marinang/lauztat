@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import integrate
 
 def likelihood( function, badvalue = 100000):
 	def value(x, *args):

@@ -12,7 +12,8 @@ from ..utils.stats import integrate1d
 
 class AsymptoticCalculator(Calculator):
 	
-	def __init__(self, null_hypothesis, alt_hypothesis, data, qtilde=False, onesided=True, onesideddiscovery=False, CLs=True):
+	def __init__(self, null_hypothesis, alt_hypothesis, data, qtilde=False, onesided=True, 
+				 onesideddiscovery=False, CLs=True):
 		
 		super().__init__(null_hypothesis, alt_hypothesis, data)
 				
@@ -20,32 +21,31 @@ class AsymptoticCalculator(Calculator):
 			raise ValueError("Asymptotic calculator valid only for one paramater of interest.")
 			
 		elif len(null_hypothesis.pois) == 1 and len(alt_hypothesis.pois) == 0:
-			null_poi_name = null_hypothesis.poinames()[0]
-			print("{0} = 0. assumed for the alternative hypothesis.".format(null_poi_name))
-			null_poi_name = null_hypothesis.poinames()[0]
-			self._poi = null_hypothesis.model[null_poi_name]
-			self._poi_null_val = self.null_hypothesis.pois[self._poi.name]
+			null_poi_name = null_hypothesis.poinames[0]
+			print("{0} = 0 assumed for the alternative hypothesis.".format(null_poi_name))
+			self._poi = null_hypothesis.getpoi(null_poi_name)
+			self._poi_null_val = self.null_hypothesis.poivalues[null_poi_name]
 			self._poi_alt_val = 0.
 			
 		elif len(null_hypothesis.pois) == 0 and len(alt_hypothesis.pois) == 1:
-			alt_poi_name  = alt_hypothesis.poinames()[0]
-			print("{0} = 0. assumed for the null hypothesis.".format(alt_poi_name))
-			poi_name = alt_hypothesis.poinames()[0]
-			self._poi = alt_hypothesis.model[alt_poi_name]
+			alt_poi_name  = alt_hypothesis.poinames[0]
+			print("{0} = 0 assumed for the null hypothesis.".format(alt_poi_name))
+			self._poi = alt_hypothesis.getpoi(alt_poi_name)
 			self._poi_null_val = 0.
-			self._poi_alt_val = self.alt_hypothesis.pois[self._poi.name]
+			self._poi_alt_val = self.alt_hypothesis.poivalues[alt_poi_name]
 			
 		else:
-			null_poi_name = null_hypothesis.poinames()[0]
-			alt_poi_name  = alt_hypothesis.poinames()[0]
+			null_poi_name = null_hypothesis.poinames[0]
+			alt_poi_name  = alt_hypothesis.poinames[0]
 			
 			if null_poi_name !=alt_poi_name:
-				raise ValueError("Different names for parameters of interest in null and alternative hypothesis.")
+				raise ValueError("Different names for parameters of interest in null and" 
+				                +" alternative hypothesis.")
 				
-			poi_name = null_hypothesis.poinames()[0]
+			poi_name = null_hypothesis.poinames[0]
 			self._poi = null_hypothesis.model[alt_poi_name]
-			self._poi_null_val = self.null_hypothesis.pois[self._poi.name]
-			self._poi_alt_val = self.alt_hypothesis.pois[self._poi.name]
+			self._poi_null_val = self.null_hypothesis.poivalues[poi_name]
+			self._poi_alt_val = self.alt_hypothesis.poivalues[poi_name]
 			
 		self._qtilde = qtilde
 		self._onesided = onesided
@@ -98,16 +98,16 @@ class AsymptoticCalculator(Calculator):
 		if hasattr(self, "_null_minuit"):
 			return self._null_minuit
 		else:
-			if self._poi.name in self.null_hypothesis.poinames():
+			if self._poi.name in self.null_hypothesis.poinames:
 				hypo = self.null_hypothesis
-			elif self._poi.name in self.alt_hypothesis.poinames():
+			elif self._poi.name in self.alt_hypothesis.poinames:
 				hypo = self.alt_hypothesis
 				
-			lh = hypo.nll_function(self.data, weights=None)
+			lh = hypo.model.nll_function(self.data, weights=None)
 			
 			params = {}
 			
-			for v in hypo.variables:
+			for v in hypo.model.variables:
 				pars = v.tominuit()
 				params.update(pars)
 
@@ -118,21 +118,23 @@ class AsymptoticCalculator(Calculator):
 		if hasattr(self, "_asy_minuit"):
 			return self._asy_minuit
 		else:
-			if self._poi.name in self.null_hypothesis.poinames():
+			if self._poi.name in self.null_hypothesis.poinames:
 				hypo = self.null_hypothesis
-			elif self._poi.name in self.alt_hypothesis.poinames():
+			elif self._poi.name in self.alt_hypothesis.poinames:
 				hypo = self.alt_hypothesis
 				
-			asy_likelihood = hypo.nll_function(self.asymov_dataset()[0], weights=self.asymov_dataset()[1])
+			asy_likelihood = hypo.model.nll_function(self.asymov_dataset()[0], 
+											          weights=self.asymov_dataset()[1])
 			self._asy_likelihood = asy_likelihood 
 			
 			params = {}
 			
-			for v in hypo.variables:
+			for v in hypo.model.variables:
 				pars = v.tominuit()
 				params.update(pars)
 				
-			self._asy_minuit = iminuit.Minuit(asy_likelihood, pedantic=False, errordef=0.5, **params)
+			self._asy_minuit = iminuit.Minuit(asy_likelihood, pedantic=False, errordef=0.5, 
+											  **params)
 			return self._asy_minuit
 	
 	@property			
@@ -157,10 +159,10 @@ class AsymptoticCalculator(Calculator):
 		if hasattr(self, "_asymov_dataset"):
 			return self._asymov_dataset	
 		else:
-			alt_LH = self.alt_hypothesis.nll_function(self.data, weights=None)
+			alt_LH = self.alt_hypothesis.model.nll_function(self.data, weights=None)
 			params = {}
 			
-			for v in self.alt_hypothesis.variables:
+			for v in self.alt_hypothesis.model.variables:
 				pars = v.tominuit()
 				params.update(pars)
 				if v.name == self._poi.name:
@@ -169,10 +171,11 @@ class AsymptoticCalculator(Calculator):
 					params["{0}".format(self._poi.name)] = poiv
 
 			minuit_alt =  iminuit.Minuit(alt_LH, pedantic=False, errordef=0.5, **params)
+			print("Get fit best values for nuisance parameters for alternative hypothesis!")
 			minuit_alt.migrad()
 			
-			pdf_alt = self.alt_hypothesis.pdf
-			bounds = self.alt_hypothesis.obs[0].range
+			pdf_alt = self.alt_hypothesis.model.pdf
+			bounds = self.alt_hypothesis.model.obs[0].range
 			
 			self._asymov_dataset = generate_asymov_dataset(pdf_alt, minuit_alt.values, bounds)
 			return self._asymov_dataset	
@@ -244,7 +247,7 @@ class AsymptoticCalculator(Calculator):
 			qalt   = 2*(nll_pv_alt - nll_poiv_alt)	
 			
 			if qalt < 0:
-				qalt = 0.0001
+				qalt = 0.0000001
 				
 			pnull, palt = Pvalues(qnull, qalt, self.qtilde, self.onesided, self.onesideddiscovery)
 			
@@ -374,19 +377,41 @@ class AsymptoticCalculator(Calculator):
 			fig, ax = plt.subplots(figsize=(10,8))
 			
 		if self.CLs:
-			_ = ax.plot(poi_values, p_values["cls"], label = "Observed CL$_{s}$", marker = ".", color='k', markerfacecolor = "r",
-						markeredgecolor = "r", linewidth = 2.0, ms = 11)
-		_ = ax.plot(poi_values, p_values["clsb"], label = "Observed CL$_{s+b}$", marker = ".", color='k', markerfacecolor = "b",
-					markeredgecolor = "b", linewidth = 2.0, ms = 11, linestyle=":")	
-		_ = ax.plot(poi_values, p_values["clb"], label = "Observed CL$_{b}$", marker = ".", color='k', markerfacecolor = "k",
-					markeredgecolor = "k", linewidth = 2.0, ms = 11)
-		_ = ax.plot(poi_values, p_values["exp"], label = "Expected CL$_{s}-$Median", color='k', linestyle="--", linewidth = 1.5, ms = 10)
+			cls_clr  = "r"
+			clsb_clr = "b"
+		else:
+			cls_clr  = "b"
+			clsb_clr = "r"
+			
+			
+		_ = ax.plot(poi_values, p_values["cls"], label = "Observed CL$_{s}$", marker = ".", color='k', 
+		            markerfacecolor = cls_clr, markeredgecolor = cls_clr, linewidth = 2.0, ms = 11)
+			
+		_ = ax.plot(poi_values, p_values["clsb"], label = "Observed CL$_{s+b}$", marker = ".", color='k', 
+		            markerfacecolor = clsb_clr, markeredgecolor = clsb_clr, linewidth = 2.0, ms = 11, linestyle=":")
+			
+		_ = ax.plot(poi_values, p_values["clb"], label = "Observed CL$_{b}$", marker = ".", color='k', 
+		            markerfacecolor = "k", markeredgecolor = "k", linewidth = 2.0, ms = 11)
+		
+		_ = ax.plot(poi_values, p_values["exp"], label = "Expected CL$_{s}-$Median", color='k', linestyle="--", 
+		            linewidth = 1.5, ms = 10)
+		
 		_ = ax.plot([poi_values[0], poi_values[-1]], [alpha, alpha], color='r', linestyle='-', linewidth=1.5)
-		_ = ax.fill_between(poi_values, p_values["exp"], p_values["exp_p1"], facecolor = "lime", label = "Expected CL$_{s} \pm 1 \sigma$")
+		
+		_ = ax.fill_between(poi_values, p_values["exp"], p_values["exp_p1"], facecolor = "lime", 
+		                    label = "Expected CL$_{s} \pm 1 \sigma$")
+		
 		_ = ax.fill_between(poi_values, p_values["exp"], p_values["exp_m1"], facecolor = "lime")
-		_ = ax.fill_between(poi_values, p_values["exp_p1"], p_values["exp_p2"], facecolor = "yellow", label = "Expected CL$_{s} \pm 2 \sigma$")
+		
+		_ = ax.fill_between(poi_values, p_values["exp_p1"], p_values["exp_p2"], facecolor = "yellow", 
+		                    label = "Expected CL$_{s} \pm 2 \sigma$")
+		
 		_ = ax.fill_between(poi_values, p_values["exp_m1"], p_values["exp_m2"], facecolor = "yellow")
-		ax.set_ylim(-0.01,1.1)
+		
+		if self.CLs:
+			ax.set_ylim(-0.01,1.1)
+		else:
+			ax.set_ylim(-0.01,0.55)
 		ax.set_ylabel("p-value")
 		ax.set_xlabel(self._poi.name)
 		ax.legend(loc="best", fontsize = 14)

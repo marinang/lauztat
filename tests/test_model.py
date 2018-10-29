@@ -125,12 +125,26 @@ def test_hypothesis():
 	m = Model(pdf, observables=[x], variables=[mu, sigma])
 	
 	m.create_hypothesis(pois={"mu":0.1})
-	m.create_hypothesis(pois={"mu":[0.8,0.9,1.0,1.1,1.2]})
+	hypothesis = m.create_hypothesis(pois={"mu":[0.8,0.9,1.0,1.1,1.2]})
 	
 	with pytest.raises(TypeError):
 		m.create_hypothesis(mu)
 	with pytest.raises(ValueError):
 		m.create_hypothesis({"nu":0.1})
+	
+	assert hypothesis.pois == [mu]	
+	assert hypothesis.pois == hypothesis.parametersofinterest
+	assert hypothesis.poivalues == {"mu":[0.8,0.9,1.0,1.1,1.2]}
+	assert hypothesis.poinames == ["mu"]
+	assert hypothesis.model == m
+	assert hypothesis.nuis == [sigma]
+	assert hypothesis.nuis == hypothesis.nuisanceparameters
+	assert hypothesis.nuisnames == ["sigma"]
+	hypothesis.summary()
+	
+	hypothesis = Hypothesis(m, pois={"mu":0.1})
+	with pytest.raises(TypeError):
+		Hypothesis(pois={"mu":0.1})
 	
 	
 	

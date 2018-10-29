@@ -31,7 +31,7 @@ setup(  name = "statnight",
 	test_suite = "tests",
 	install_requires = ir,
 	setup_requires = ["pytest-runner"],
-	tests_require = ["pytest"],
+	tests_require = ["pytest","jupyter", "papermill"],
 	classifiers = [
 			"Intended Audience :: Science/Research",
 			"Operating System :: MacOS",
