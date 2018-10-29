@@ -9,6 +9,7 @@ from setuptools import setup
 major, minor = sys.version_info[:2]
 
 tr = ["pytest", "jupyter", "papermill", "attrs>=18.2.0", "jsonschema==2.6.0"]
+tr += ["jupyter_client"]
 ir = ["iminuit", "numpy", "scipy"]
 
 if major >= 3 and minor >= 5:
