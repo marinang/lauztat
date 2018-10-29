@@ -22,7 +22,6 @@ if major == 2 and minor == 7:
 if major < 3 or (major == 3 and minor <= 4):
 	tr += ["ipython<6.0"]
 	tr += ["ipykernel<5.0.0"]
-	tr += ["jupyter-console<=5.0.0"]
 
 setup(  name = "statnight",
 	version = "1.0",

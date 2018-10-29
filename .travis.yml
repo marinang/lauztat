@@ -12,7 +12,7 @@ python:
   - 3.6
 
 install:
-  - pip install . 
+  - pip install -e . 
   - pip install --only-binary=numpy,scipy numpy scipy
 
 script:
