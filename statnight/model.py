@@ -139,7 +139,7 @@ class Model:
         self._check_params(ext_par)
         self._ext_pars += ext_par
 
-    def rm_ext_pars(self, name ):
+    def rm_ext_pars(self, name):
         if not isinstance(name, list):
             name = [name]
         for n in name:
@@ -224,153 +224,179 @@ class Model:
 
         return compute_null
 
-########################### HYPOTHESIS ###########################
+
+# Hypothesis
+
 
 class Hypothesis:
 
-	def __init__(self, model, pois={}):
-		""" __init__ function """
+    def __init__(self, model, pois={}):
+        """ __init__ function """
 
-		if not isinstance(model, Model):
-			raise TypeError("Please provide a Model.")
+        if not isinstance(model, Model):
+            raise TypeError("Please provide a Model.")
 
-		if not isinstance(pois, dict):
-			raise TypeError("Please provide a dictionnary with the name of the pois as keys and their"
-			                 " and their value as values.")
+        if not isinstance(pois, dict):
+            msg = "Please provide a dictionnary with the name of "
+            msg += "the pois as keys and their and their value as"
+            msg += " values."
+            raise TypeError(msg)
 
-		unknown_pois = [p for p in pois.keys() if p not in model.vars_names()]
-		if len(unknown_pois) > 0:
-			raise ValueError("Unknown parameters {0} not in {1}".format(unknown_pois, model.vars_names()))
+        unknown_pois = [p for p in pois.keys() if p not in model.vars_names()]
+        if len(unknown_pois) > 0:
+            msg = "Unknown parameters {0} not in {1}"
+            msg = msg.format(unknown_pois, model.vars_names())
+            raise ValueError(msg)
 
-		self._model = model
-		self._pois  = [model[p] for p in pois.keys()]
-		self._poivalues = pois
-		self._nuis = [v for v in model.variables if not v.name in self.poinames]
+        self._model = model
+        self._pois = [model[p] for p in pois.keys()]
+        self._poivalues = pois
 
-	@property
-	def pois( self ):
-		return self._pois
+        def in_pois(x):
+            return x.name in self.poinames
+        self._nuis = [v for v in model.variables if in_pois(x)]
 
-	@property
-	def poivalues( self ):
-		return dict(self._poivalues)
+    @property
+    def pois(self):
+        return self._pois
 
-	@property
-	def poinames( self ):
-		return [p.name for p in self.pois]
+    @property
+    def poivalues(self):
+        return dict(self._poivalues)
 
-	@property
-	def parametersofinterest( self ):
-		return self.pois
+    @property
+    def poinames(self):
+        return [p.name for p in self.pois]
 
-	def getpoi(self, name):
+    @property
+    def parametersofinterest(self):
+        return self.pois
 
-		if name not in self.poinames:
-			raise KeyError("Unknown parameter {0} not in {1}".format(name, self.poinames))
-		else:
-			for p in self.pois:
-				if p.name == name:
-					return p
+    def getpoi(self, name):
 
-	@property
-	def model( self ):
-		return self._model
+        if name not in self.poinames:
+            msg = "Unknown parameter {0} not in {1}"
+            msg = msg.format(name, self.poinames)
+            raise KeyError(msg)
+        else:
+            for p in self.pois:
+                if p.name == name:
+                    return p
 
-	@property
-	def nuis( self ):
-		return self._nuis
+    @property
+    def model(self):
+        return self._model
 
-	@property
-	def nuisanceparameters( self ):
-		return self.nuis
+    @property
+    def nuis(self):
+        return self._nuis
 
-	@property
-	def nuisnames( self ):
-		return [n.name for n in self.nuis]
+    @property
+    def nuisanceparameters(self):
+        return self.nuis
 
-	def _summary(self):
+    @property
+    def nuisnames(self):
+        return [n.name for n in self.nuis]
 
-		obs_names = self.model.obs_names()
-		nuis_names = [n.name for n in self.nuis]
+    def _summary(self):
 
-		toprint  = "Observables: {0}\n".format(obs_names)
-		toprint += "Paramaters of interest: {0}\n".format(self.poivalues)
-		toprint += "Nuisance parameters: {0}\n".format(nuis_names)
-		toprint += "Extended parameters: {0}\n".format(self.model.ext_pars)
+        obs_names = self.model.obs_names()
+        nuis_names = [n.name for n in self.nuis]
 
-		return toprint
+        toprint = "Observables: {0}\n".format(obs_names)
+        toprint += "Paramaters of interest: {0}\n".format(self.poivalues)
+        toprint += "Nuisance parameters: {0}\n".format(nuis_names)
+        toprint += "Extended parameters: {0}\n".format(self.model.ext_pars)
 
-	def summary(self):
-		print(self._summary())
+        return toprint
 
-	def __repr__(self):
-		ret = "Hypothesis object: \n"
-		ret += self._summary()
-		return ret
+    def summary(self):
+        print(self._summary())
 
-########################### UTILITIEs ###########################
+    def __repr__(self):
+        ret = "Hypothesis object: \n"
+        ret += self._summary()
+        return ret
 
-def check_pdf( _pdf ):
-	if hasattr(_pdf, "__call__"):
-		args = [1.0 for n in range(len(describe(_pdf)))]
-		test_return = _pdf(*args)
-		if not isinstance(test_return, (int, float)):
-			raise ValueError("Please provide a function that returns a number (int/float).")
-		return _pdf
-	else:
-		raise TypeError("Please provide a probability density function returning a number (int/float).")
+# UTILITIEs
 
-def check_obs( observables):
 
-	if not isinstance(observables, list):
-		observables = [observables]
-	observables = list(observables)
+def check_pdf(_pdf):
+    if hasattr(_pdf, "__call__"):
+        args = [1.0 for n in range(len(describe(_pdf)))]
+        test_return = _pdf(*args)
+        if not isinstance(test_return, (int, float)):
+            msg = "Please provide a function that returns a number"
+            msg += " (int/float)."
+            raise ValueError(msg)
+        return _pdf
+    else:
+        msg = "Please provide a probability density function returning"
+        msg += "a number (int/float)."
+        raise TypeError(msg)
 
-	if len(observables) == 0:
-			return observables
-	else:
-		if not all(isinstance(obs, Observable) for obs in observables):
-			raise ValueError("Please provide a Observable (a list of Observable's)")
-		return observables
 
-def check_vars( variables):
+def check_obs(observables):
 
-	if not isinstance(variables, list):
-		variables = [variables]
-	variables = list(variables)
+    if not isinstance(observables, list):
+        observables = [observables]
+    observables = list(observables)
 
-	if len(variables) == 0:
-			return variables
-	else:
-		if not all(isinstance(v, (Variable, Constant)) for v in variables):
-			raise ValueError("Please provide a Variable (a list of Variable's)")
-		return variables
+    if len(observables) == 0:
+        return observables
+    else:
+        if not all(isinstance(obs, Observable) for obs in observables):
+            msg = "Please provide a Observable (a list of Observable's)"
+            raise ValueError(msg)
+        return observables
 
-def check_ext_pars( ext_pars ):
 
-	if not isinstance(ext_pars, list):
-		ext_pars = [ext_pars]
-	ext_pars = list(ext_pars)
+def check_vars(variables):
 
-	if len(ext_pars) == 0:
-		return ext_pars
-	else:
-		if not all(isinstance(e, str) for e in ext_pars):
-			raise ValueError("Please provide a list of strings for the extended parameters.")
-		return ext_pars
+    if not isinstance(variables, list):
+        variables = [variables]
+    variables = list(variables)
 
-def describe( function ):
-	return iminuit.describe(function)
+    if len(variables) == 0:
+        return variables
+    else:
+        if not all(isinstance(v, (Variable, Constant)) for v in variables):
+            msg = "Please provide a Variable (a list of Variable's)"
+            raise ValueError(msg)
+        return variables
+
+
+def check_ext_pars(ext_pars):
+
+    if not isinstance(ext_pars, list):
+        ext_pars = [ext_pars]
+    ext_pars = list(ext_pars)
+
+    if len(ext_pars) == 0:
+        return ext_pars
+    else:
+        if not all(isinstance(e, str) for e in ext_pars):
+            msg = "Please provide a list of strings for the extended"
+            msg += "  parameters."
+            raise ValueError(msg)
+        return ext_pars
+
+
+def describe(function):
+    return iminuit.describe(function)
+
 
 def has_duplicates(list_of_values):
-	value_dict = collections.defaultdict(int)
-	for item in list_of_values:
-		value_dict[item] += 1
-	return any(val > 1 for val in value_dict.values())
+    value_dict = collections.defaultdict(int)
+    for item in list_of_values:
+        value_dict[item] += 1
+    return any(val > 1 for val in value_dict.values())
 
-def haspdf( hypothesis ):
 
-	if isinstance(hypothesis, Hypothesis) and hypothesis.pdf is not None:
-		return True
-	else:
-		return False
+def haspdf(hypothesis):
+
+    if isinstance(hypothesis, Hypothesis) and hypothesis.pdf is not None:
+        return True
+    else:
+        return False
