@@ -5,7 +5,7 @@ import attr
 from attr import attrs, attrib
 
 def check_range(instance=None, range=None, value=None):
-	if value and not (isinstance(value, (list, tuple)) and len(value) == 2 and all(isinstance(v, (float, int)) for v in value)):
+	if not (len(value) == 2 and all(isinstance(v, (float, int)) for v in value)):
 		raise TypeError("Please provide a tuple/list with lower and upper limits for the range of this parameter.")
 	if value[0] >= value[1]:
 		raise ValueError("Lower limit of the range should be strictly lower the the upper limit.")
@@ -47,7 +47,7 @@ class Named(Object):
 
 @attrs(repr=False)				
 class Range(Object):
-	range = attrib(validator=check_range)
+	range = attrib(validator=[attr.validators.instance_of((tuple,list)), check_range])
 									
 	def __repr__(self):
 		return "Range({})".format(self.range)
@@ -75,14 +75,14 @@ class Constant(Named):
 class Variable(Named, Range):
 	
 	initvalue  = attr.ib(type=(int,float), 
-						 validator=[attr.validators.instance_of((int,float)), check_initvalue], 
-						 default=-1.)
+	validator=[attr.validators.instance_of((int,float)), check_initvalue], 
+	default=-1.)
 	initstep   = attr.ib(type=(int,float), 
-						 validator=[attr.validators.instance_of((int,float)), check_initstep], 
-						 default=-1.)
+	validator=[attr.validators.instance_of((int,float)), check_initstep], 
+	default=-1.)
 	constraint = attr.ib(type=(int,float), 
-						 validator=check_constraint, 
-						 default=None)
+	validator=check_constraint, 
+	default=None)
 								
 	def __attrs_post_init__(self):
 		if self.initvalue == -1:
