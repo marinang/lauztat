@@ -1,10 +1,18 @@
 #!/usr/bin/python
+
+"""
+Parameter classes
+"""
+
 from iminuit import describe
 import attr
 from attr import attrs, attrib
 
 
 def check_range(instance=None, range=None, value=None):
+    """
+    Validator for range attribute in Range class.
+    """
     has2elements = len(value) == 2
     allnumbers = all(isinstance(v, (float, int)) for v in value)
     if not (has2elements and allnumbers):
@@ -16,6 +24,9 @@ def check_range(instance=None, range=None, value=None):
 
 
 def check_initvalue(instance=None, initvalue=None, value=None):
+    """
+    Validator for initvalue attribute in Variable class.
+    """
     if value != -1:
         _range = instance.range
         if not(value >= _range[0] and value <= _range[1]):
@@ -24,6 +35,9 @@ def check_initvalue(instance=None, initvalue=None, value=None):
 
 
 def check_initstep(instance=None, initstep=None, value=None):
+    """
+    Validator for initstep attribute in Variable class.
+    """
     _range = instance.range
     if value != -1:
         if value >= (_range[1] - _range[0]):
@@ -32,6 +46,9 @@ def check_initstep(instance=None, initstep=None, value=None):
 
 
 def check_constraint(instance=None, constraint=None, value=None):
+    """
+    Validator for comstraint attribute in Variable class.
+    """
     if value:
         if hasattr(value, "__call__"):
             pars = describe(value)
@@ -51,17 +68,20 @@ def check_constraint(instance=None, constraint=None, value=None):
 
 
 @attrs
-class Object(object):
-    pass
+class Named(object):
+    """
+    Class for named objects.
+    """
 
-
-@attrs
-class Named(Object):
     name = attrib(validator=attr.validators.instance_of(str))
 
 
 @attrs(repr=False)
-class Range(Object):
+class Range(object):
+    """
+    Class for object with a numerical range, i.e. Range((0,10)).
+    """
+
     range = attrib(validator=[attr.validators.instance_of((tuple, list)),
                               check_range])
 
@@ -71,6 +91,10 @@ class Range(Object):
 
 @attrs(repr=False, slots=True)
 class Observable(Named, Range):
+    """
+    Class for physics observables:
+        obs = Observable(name="x", range=(0,100))
+    """
 
     def __repr__(self):
         return "Observable('{0}', range={1})".format(self.name, self.range)
@@ -78,6 +102,11 @@ class Observable(Named, Range):
 
 @attrs(repr=False, slots=True)
 class Constant(Named):
+    """
+    Class for constant paramaters:
+        const = Constant(name="mu", value="1.2")
+    """
+
     value = attr.ib(type=(int, float),
                     validator=attr.validators.instance_of((int, float)))
 
@@ -93,10 +122,16 @@ class Constant(Named):
 
 @attrs(repr=False, slots=True)
 class Variable(Named, Range):
+    """
+    Class for variable paramaters:
+        var = (name="sigma", range=(0, 5))
+        var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
+        var = (name="sigma", range=(0, 5), constraint= lambda x: (x-2)**2
+    """
 
     initvalue = attr.ib(type=(int, float),
                         validator=[attr.validators.instance_of((int, float)),
-                        check_initvalue],
+                                   check_initvalue],
                         default=-1.)
     initstep = attr.ib(type=(int, float),
                        validator=[attr.validators.instance_of((int, float)),
@@ -126,5 +161,4 @@ class Variable(Named, Range):
 
         if self.constraint:
             return basis + ", constraint={0})".format(self.constraint)
-        else:
-            return basis + ")"
+        return basis + ")"
