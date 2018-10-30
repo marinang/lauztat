@@ -75,14 +75,14 @@ class Constant(Named):
 class Variable(Named, Range):
 	
 	initvalue  = attr.ib(type=(int,float), 
-	validator=[attr.validators.instance_of((int,float)), check_initvalue], 
-	default=-1.)
+			validator=[attr.validators.instance_of((int,float)), check_initvalue], 
+			default=-1.)
 	initstep   = attr.ib(type=(int,float), 
-	validator=[attr.validators.instance_of((int,float)), check_initstep], 
-	default=-1.)
+			validator=[attr.validators.instance_of((int,float)), check_initstep], 
+			default=-1.)
 	constraint = attr.ib(type=(int,float), 
-	validator=check_constraint, 
-	default=None)
+			validator=check_constraint, 
+			default=None)
 								
 	def __attrs_post_init__(self):
 		if self.initvalue == -1:
