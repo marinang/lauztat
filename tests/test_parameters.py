@@ -7,11 +7,11 @@ def test_constructors():
 	o = Object()
 	
 	n = Named(name="n")
-	with pytest.raises(KeyError):
+	with pytest.raises(TypeError):
 		Named()
 		
 	r = Range(range=(1,2))
-	with pytest.raises(KeyError):
+	with pytest.raises(TypeError):
 		Range()
 	with pytest.raises(TypeError):
 		Range(1)
@@ -73,80 +73,32 @@ def test_properties():
 	
 	r = Range(range=(1,2))
 	assert r.range == (1,2)
-	r.range = (3,4)
-	assert r.range == (3,4)
-	with pytest.raises(TypeError):
-		r.range = 1
-	with pytest.raises(TypeError):
-		r.range = (1)
-	with pytest.raises(TypeError):
-		r.range = [1,"2"]
-	with pytest.raises(ValueError):
-		r.range = [1, -1]
-		
+	
 	obs = Observable("obs", (1,2))
 	assert obs.name == "obs"
 	assert obs.range == (1,2)
-	obs.range = (3,4)
-	assert obs.range == (3,4)
-	with pytest.raises(TypeError):
-		obs.range = 1
-	with pytest.raises(TypeError):
-		obs.range = (1)
-	with pytest.raises(TypeError):
-		obs.range = [1,"2"]
-	with pytest.raises(ValueError):
-		obs.range = [1, -1]
 	
 	const = Constant("const", 1.4)
 	assert const.name == "const"
 	assert const.value == 1.4
-	const.value = 2.8
-	assert const.value == 2.8
-	with pytest.raises(TypeError):
-			const.value = "1.4"
 			
 	var = Variable("var", (1,2))
 	assert var.name == "var"
 	assert var.range == (1,2)
-	assert var.initvalue == 0.5
+	assert var.initvalue == 1.5
 	assert var.initstep  == 0.01
 	assert var.constraint == None
-	var.range = (2,5)
-	assert var.range == (2,5)
-	with pytest.raises(TypeError):
-		var.range = 1
-	with pytest.raises(TypeError):
-		var.range = (1)
-	with pytest.raises(TypeError):
-		var.range = [1,"2"]
-	with pytest.raises(ValueError):
-		var.range = [1, -1]
-	var.initvalue = 4
-	assert var.initvalue == 4
-	with pytest.raises(ValueError):
-		var.initvalue = 1.5
-	with pytest.raises(TypeError):
-		var.initvalue = "1.5"
-	assert var.initstep  == 0.01
-	var.initstep = 0.5
-	assert var.initstep  == 0.5
-	with pytest.raises(ValueError):
-		var.initstep = 3.0
+	
 	def f(a):
-		return (a-2)**2
-	var.constraint = f
-	assert repr(var.constraint) == repr(f)
-	assert var.constraint(2) == f(2)
-	with pytest.raises(TypeError):
-		def f(a, b):
-			return a*b
-		var.constraint = f
-	with pytest.raises(ValueError):
-		def f(a):
-			return str(a)
-		var.constraint = f
+		return a+2
 		
+	var = Variable("var", (1,2), initvalue=1.3, initstep=0.3, constraint=f)
+	assert var.name == "var"
+	assert var.range == (1,2)
+	assert var.initvalue == 1.3
+	assert var.initstep  == 0.3
+	assert var.constraint == f
+			
 def test_methods():
 	
 	const = Constant("const", 1.4)
@@ -171,7 +123,7 @@ def test_repr():
 	assert repr(const) == "Constant('const', value=1.4)"
 	
 	var = Variable("var", (1,2))
-	assert repr(var) == "Variable('var', initvalue=0.5, range=(1, 2), initstep=0.01)"
+	assert repr(var) == "Variable('var', initvalue=1.5, range=(1, 2), initstep=0.01)"
 	
 	def f(a):
 		return (a-2)**2
