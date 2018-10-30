@@ -254,7 +254,7 @@ class Hypothesis:
 
         def in_pois(x):
             return x.name in self.poinames
-        self._nuis = [v for v in model.variables if in_pois(x)]
+        self._nuis = [v for v in model.variables if not in_pois(v)]
 
     @property
     def pois(self):
