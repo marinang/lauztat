@@ -4,4 +4,3 @@
 build/
 dist/
 .pytest_cache/
-docs/_build
