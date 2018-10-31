@@ -8,9 +8,23 @@ import math
 
 
 class Model:
+    """
+    Class for model definition.
+
+    **Arguments:**
+
+        - **pdf** callable object. Probability density function (pdf) \
+        of the model.
+        - **observables** (optional). List of statnight.parameters.Observable.
+        - **variables** (optional). List statnight.parameters.Variable.
+        - **ext_pars** (optional). List of name (str) of the extended \
+        parameters of the model.
+    """
 
     def __init__(self, pdf, observables=[], variables=[], ext_pars=[]):
-        """ __init__ function """
+        """
+        __init__ function
+        """
 
         self._pdf = check_pdf(pdf)
         self._parameters = describe(pdf)
@@ -22,10 +36,16 @@ class Model:
 
     @property
     def pdf(self):
+        """
+        Returns the probability density function of the model.
+        """
         return self._pdf
 
     @property
     def parameters(self):
+        """
+        Returns the parameters, from the pdf, of the model.
+        """
         return self._parameters
 
     def _available_parameters(self):
@@ -33,7 +53,13 @@ class Model:
         return [p for p in self.parameters if p not in _params]
 
     def __getitem__(self, name):
+        """
+        Get the parameter with name.
 
+        **Arguments:**
+
+            -**name** str, name of the parameter.
+        """
         if name not in self.parameters:
             msg = "Unknown parameter {0} not in {1}"
             msg = msg.format(name, self.parameters)
@@ -50,7 +76,14 @@ class Model:
                     return v
 
     def create_hypothesis(self, pois={}):
+        """
+        Create an Hypothesis from the model.
 
+        **Arguments:**
+
+            -**pois** dictionnary with name of parameters of interest as keys
+            and their values as values.
+        """
         if len(self.obs) + len(self.vars) < len(self.parameters):
             _params = self.obs_names() + self.vars_names()
             not_assigned = [p for p in self.parameters if p not in _params]
@@ -62,14 +95,27 @@ class Model:
     # Observables
 
     @property
-    def obs(self):
-        return list(self._obs)
-
-    @property
     def observables(self):
+        """
+        Returns the observables of the model.
+        """
         return self.obs
 
+    @property
+    def obs(self):
+        """
+        Returns the observables of the model, same as observables.
+        """
+        return list(self._obs)
+
     def add_obs(self, observables):
+        """
+        Add observables to the model.
+
+        **Arguments:**
+
+            -**observables** an/a list of statnight.parameters.Observable.
+        """
         obs = check_obs(observables)
         _names = [o.name for o in obs]
         for n in _names:
@@ -79,6 +125,13 @@ class Model:
         self._obs += obs
 
     def rm_obs(self, name):
+        """
+        Remove observables from the model.
+
+        **Arguments:**
+
+            -**observables** an/a list of statnight.parameters.Observable.
+        """
         if not isinstance(name, list):
             name = [name]
         for n in name:
@@ -88,19 +141,35 @@ class Model:
                 raise ValueError("{0} not in observables.".format(n))
 
     def obs_names(self):
+        """
+        Returns the names of the observables.
+        """
         return [o.name for o in self.obs]
 
     # Variables
 
     @property
-    def vars(self):
-        return list(self._vars)
-
-    @property
     def variables(self):
+        """
+        Returns the variables of the model.
+        """
         return self.vars
 
+    @property
+    def vars(self):
+        """
+        Returns the variables of the model, same as variables.
+        """
+        return list(self._vars)
+
     def add_vars(self, variables):
+        """
+        Add variables to the model.
+
+        **Arguments:**
+
+            -**variables** an/a list of statnight.parameters.Variable.
+        """
         _vars = check_vars(variables)
         _names = [v.name for v in _vars]
         for n in _names:
@@ -110,6 +179,13 @@ class Model:
         self._vars += _vars
 
     def rm_vars(self, name):
+        """
+        Remove variables from the model.
+
+        **Arguments:**
+
+            -**variables** an/a list of statnight.parameters.Variable.
+        """
         if not isinstance(name, list):
             name = [name]
         for n in name:
@@ -121,6 +197,9 @@ class Model:
                 raise ValueError("{0} not in variables.".format(n))
 
     def vars_names(self):
+        """
+        Returns the names of the variables.
+        """
         return [v.name for v in self.vars]
 
     # Extended
