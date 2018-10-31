@@ -1,0 +1,192 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>API Documentation &#8212; statnight 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to statnight’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="api-documentation">
+<span id="api"></span><h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="model">
+<span id="id1"></span><h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="statnight.model.Model">
+<em class="property">class </em><code class="descclassname">statnight.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>pdf</em>, <em>observables=[]</em>, <em>variables=[]</em>, <em>ext_pars=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for model definition.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>pdf</strong> callable object. Probability density function (pdf)         of the model.</li>
+<li><strong>observables</strong> (optional). List of statnight.parameters.Observable.</li>
+<li><strong>variables</strong> (optional). List statnight.parameters.Variable.</li>
+<li><strong>ext_pars</strong> (optional). List of name (str) of the extended         parameters of the model.</li>
+</ul>
+</div></blockquote>
+<dl class="method">
+<dt id="statnight.model.Model.pdf">
+<code class="descname">pdf</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Model.pdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the probability density function of the model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.parameters">
+<code class="descname">parameters</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Model.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parameters, from the pdf, of the model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.observables">
+<code class="descname">observables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Model.observables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the observables of the model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.add_obs">
+<code class="descname">add_obs</code><span class="sig-paren">(</span><em>observables</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model.add_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model.add_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add observables to the model.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div>-<strong>observables</strong> an/a list of statnight.parameters.Observable.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.variables">
+<code class="descname">variables</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Model.variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the variables of the model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.add_vars">
+<code class="descname">add_vars</code><span class="sig-paren">(</span><em>variables</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model.add_vars"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model.add_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add variables to the model.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div>-<strong>variables</strong> an/a list of statnight.parameters.Variable.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.__getitem__">
+<code class="descname">__getitem__</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model.__getitem__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the parameter with name.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div>-<strong>name</strong> str, name of the parameter.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.create_hypothesis">
+<code class="descname">create_hypothesis</code><span class="sig-paren">(</span><em>pois={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model.create_hypothesis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model.create_hypothesis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an Hypothesis from the model.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div>-<strong>pois</strong> dictionnary with name of parameters of interest as keys
+and their values as values.</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">statnight</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#model">Model</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to statnight’s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Matthieu Marinangeli.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
