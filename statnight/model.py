@@ -287,10 +287,8 @@ class Model:
 
             for v in self.variables:
                 if isinstance(v, Variable) and v.constraint is not None:
-                    fromstatnight = "statnight.utils.pdf" in repr(v.constraint)
-                    hasnll = hasattr(v.constraint, "nll")
-                    if fromstatnight and hasnll:
-                        nll += v.constraint.nll(kwargs[v.name])
+                    if hasattr(v.constraint, "log"):
+                        nll += v.constraint.log(kwargs[v.name])
                     else:
                         nll += -math.log(v.constraint(kwargs[v.name]))
                 else:
