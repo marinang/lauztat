@@ -288,7 +288,7 @@ class Model:
             for v in self.variables:
                 if isinstance(v, Variable) and v.constraint is not None:
                     if hasattr(v.constraint, "log"):
-                        nll += v.constraint.log(kwargs[v.name])
+                        nll += -v.constraint.log(kwargs[v.name])
                     else:
                         nll += -math.log(v.constraint(kwargs[v.name]))
                 else:
