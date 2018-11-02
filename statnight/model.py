@@ -48,9 +48,12 @@ class Model:
         """
         return self._parameters
 
-    def _available_parameters(self):
+    def available_parameters(self):
         _params = self.obs_names() + self.vars_names()
         return [p for p in self.parameters if p not in _params]
+
+    def has_unassigned(self):
+        return len(self.available_parameters()) > 0
 
     def __getitem__(self, name):
         """
@@ -84,12 +87,6 @@ class Model:
             -**pois** dictionnary with name of parameters of interest as keys
             and their values as values.
         """
-        if len(self.obs) + len(self.vars) < len(self.parameters):
-            _params = self.obs_names() + self.vars_names()
-            not_assigned = [p for p in self.parameters if p not in _params]
-            raise ValueError("{0} have still to be assigned to \
-                    observables/variables.".format(not_assigned))
-
         return Hypothesis(self, pois)
 
     # Observables
@@ -239,7 +236,6 @@ class Model:
         obs_ = self.obs_names()
         vars_ = self.vars_names()
         ext_pars = self.ext_pars
-        pars_ = obs_ + vars_
 
         if params:
             if all(isinstance(p, Observable) for p in params):
@@ -248,6 +244,8 @@ class Model:
                 vars_ += params
             else:
                 ext_pars += params
+
+        pars_ = obs_ + vars_
 
         pars = list(set(pars_+ext_pars+self.parameters))
 
@@ -312,6 +310,11 @@ class Hypothesis:
 
         if not isinstance(model, Model):
             raise TypeError("Please provide a Model.")
+
+        if model.has_unassigned():
+            not_assigned = model.available_parameters()
+            msg = "{0} have still to be assigned to observables/variables."
+            raise ValueError(msg.format(not_assigned))
 
         if not isinstance(pois, dict):
             msg = "Please provide a dictionnary with the name of "
@@ -469,11 +472,3 @@ def has_duplicates(list_of_values):
     for item in list_of_values:
         value_dict[item] += 1
     return any(val > 1 for val in value_dict.values())
-
-
-def haspdf(hypothesis):
-
-    if isinstance(hypothesis, Hypothesis) and hypothesis.pdf is not None:
-        return True
-    else:
-        return False

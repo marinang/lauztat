@@ -76,7 +76,7 @@ class Named(object):
     name = attrib(validator=attr.validators.instance_of(str))
 
 
-@attrs(repr=False)
+@attrs()
 class Range(object):
     """
     Class for object with a numerical range, i.e. Range((0,10)).
@@ -84,9 +84,6 @@ class Range(object):
 
     range = attrib(validator=[attr.validators.instance_of((tuple, list)),
                               check_range])
-
-    def __repr__(self):
-        return "Range({})".format(self.range)
 
 
 @attrs(repr=False, slots=True)

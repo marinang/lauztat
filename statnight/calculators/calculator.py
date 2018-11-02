@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import numpy as np
 
 
 class Calculator(object):
@@ -21,14 +20,14 @@ class Calculator(object):
             msg = "{0} not a valid type for data.".format(data)
             raise TypeError(msg)
 
-        pois_in_null = haspois(alt_hypothesis)
+        pois_in_null = haspois(null_hypothesis)
         pois_in_alt = haspois(alt_hypothesis)
 
         if not(pois_in_null or pois_in_alt):
             print(null_hypothesis.summary())
             print(alt_hypothesis.summary())
-            msg = "At least one parameter of interest is required in one of \
-                  the hypothesis."
+            msg = "At least one parameter of interest is required in one of "
+            msg += "the hypothesis."
             raise ValueError(msg)
 
         self._null_hypothesis = null_hypothesis
@@ -56,13 +55,5 @@ def isHypothesis(hypo):
         return False
 
 
-def hasobs(hypo):
-    return len(hypo.model.obs) > 0
-
-
 def haspois(hypo):
     return len(hypo.pois) > 0
-
-
-def hasnuis(hypo):
-    return len(hypo.nuis) > 0
