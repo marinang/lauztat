@@ -161,4 +161,5 @@ class Variable(Named, Range):
 
         if self.constraint:
             return basis + ", constraint={0})".format(self.constraint)
+
         return basis + ")"

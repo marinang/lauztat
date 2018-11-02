@@ -87,65 +87,67 @@ class Gaussian:
 
 gaussian = Gaussian()
 
+
 class Exponential():
-	"""
-	Exponential.
-	"""
+    """
+    Exponential.
+    """
 
-	def __init__(self, tau=None):
-		self._tau = tau
-		self._hastau = self._tau is not None
+    def __init__(self, tau=None):
+        self._tau = tau
+        self._hastau = self._tau is not None
 
-		if not self._hastau:
-			self.func_code = MinimalFuncCode(["x","tau"])
+        if not self._hastau:
+            self.func_code = MinimalFuncCode(["x", "tau"])
 
-	@property
-	def tau(self):
-		return self._tau
+    @property
+    def tau(self):
+        return self._tau
 
-	def _get_args(self, *args):
+    def _get_args(self, *args):
 
-		tau = self.tau if self._hastau else args[0]
+        tau = self.tau if self._hastau else args[0]
 
-		return tau
+        return tau
 
-	def __call__(self, x, *args):
+    def __call__(self, x, *args):
 
-		if x >= 0:
-			tau = self._get_args(*args)
-			ret = tau * exp( x * -tau )
-		else:
-			ret = 0.
+        if x >= 0:
+            tau = self._get_args(*args)
+            ret = tau * exp(x * -tau)
+        else:
+            ret = 0.
 
-		return ret
+        return ret
 
-	def cdf(self, x, *args):
+    def cdf(self, x, *args):
 
-		if x >= 0:
-			tau = self._get_args(*args)
-			ret = 1. - exp( x * -tau )
-		else:
-			ret = 0.
+        if x >= 0:
+            tau = self._get_args(*args)
+            ret = 1. - exp(x * -tau)
+        else:
+            ret = 0.
 
-		return ret
+        return ret
 
-	def integrate(self, bound, nint_subdiv, *args):
+    def integrate(self, bound, nint_subdiv, *args):
 
-		a, b = bound
+        a, b = bound
 
-		Fa = self.cdf(a, *args)
-		Fb = self.cdf(b, *args)
+        Fa = self.cdf(a, *args)
+        Fb = self.cdf(b, *args)
 
-		return Fb - Fa
+        return Fb - Fa
 
-	def nll(self, x, *args):
+    def nll(self, x, *args):
 
-		if x >= 0:
-			tau = self._get_args(*args)
-			ret  = log(tau) - tau*x
-		else:
-			ret = -100000
-		return -ret
+        if x >= 0:
+            tau = self._get_args(*args)
+            ret = log(tau) - tau*x
+        else:
+            ret = -100000
+        return -ret
+
 
 exponential = Exponential()
 
