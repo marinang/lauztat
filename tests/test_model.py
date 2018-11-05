@@ -75,6 +75,10 @@ def test_model_methods():
         m.add_vars(mu)
     with pytest.raises(ValueError):
         m.add_vars(x)
+    with pytest.raises(ValueError):
+        m.add_vars(Variable("x", range=x.range))
+    with pytest.raises(ValueError):
+        m.add_obs(Observable("mu", range=mu.range))
 
     assert m.available_parameters() == ["sigma"]
     assert m.has_unassigned() is True

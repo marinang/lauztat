@@ -1,12 +1,10 @@
 #!/usr/bin/python
 import pytest
-import sys
-import papermill as pm
-import os
 from statnight.calculators import AsymptoticCalculator
-from statnight.parameters import Observable, Variable
+from statnight.parameters import Observable, Variable, Constant
 from statnight.model import Model
 from scipy.stats import norm
+from statnight.utils.pdf import Gaussian, gaussian, exponential
 import numpy as np
 
 location = "docs/examples/notebooks"
@@ -63,57 +61,127 @@ def test_properties():
     assert calc.CLs is False
 
 
-def test_notebook_upperlimit():
+class SignalBackgroundModel(object):
 
-    outputnb = '{0}/output.ipynb'.format(location)
-    common_kwargs = {
-        'output': str(outputnb),
-        'kernel_name': 'python{0}'.format(sys.version_info.major),
-        }
+    def __init__(self, bounds):
+        self._bounds = bounds
 
-    nb = "{0}/upperlimit_asymptotics.ipynb".format(location)
+    def exp_norm(self, x, tau):
+        ret = exponential(x, tau)
+        norm = exponential.integrate(self._bounds, 100, tau)
+        return ret/norm
 
-    pm.execute_notebook(nb, **common_kwargs)
+    def gauss_norm(self, x, mu, sigma):
+        ret = gaussian(x, mu, sigma)
+        norm = gaussian.integrate(self._bounds, 100, mu, sigma)
+        return ret / norm
 
-    nb = pm.read_notebook(outputnb)
+    def exp_ext(self, x, tau, Nbkg):
+        ret = self.exp_norm(x, tau)
+        return ret * Nbkg
 
-    obs_ul_nsig = nb.data["obs_ul_nsig"]
-    exp_ul_nsig = nb.data["exp_ul_nsig"]
-    exp_ul_nsig_p1sigma = nb.data["exp_ul_nsig_p1sigma"]
-    exp_ul_nsig_m1sigma = nb.data["exp_ul_nsig_m1sigma"]
+    def gauss_ext(self, x, mu, sigma, Nsig):
+        ret = self.gauss_norm(x, mu, sigma)
+        return ret * Nsig
 
-    assert obs_ul_nsig == pytest.approx(10.4269, abs=0.05)
-    assert exp_ul_nsig == pytest.approx(10.7644, abs=0.05)
-    assert exp_ul_nsig_p1sigma == pytest.approx(14.9781, abs=0.05)
-    assert exp_ul_nsig_m1sigma == pytest.approx(7.7548, abs=0.05)
-
-    os.remove(outputnb)
+    def __call__(self, x, mu, sigma, Nsig, tau, Nbkg):
+        ret = self.gauss_ext(x, mu, sigma, Nsig)
+        ret += self.exp_ext(x, tau, Nbkg)
+        return ret
 
 
-def test_notebook_discovery():
+def test_upperlimit():
 
-    outputnb = '{0}/output.ipynb'.format(location)
-    common_kwargs = {
-        'output': str(outputnb),
-        'kernel_name': 'python{0}'.format(sys.version_info.major),
-        }
+    bounds = (0.1, 3.0)
 
-    nb = "{0}/discovery_asymptotics.ipynb".format(location)
+    np.random.seed(0)
+    tau = -2.0
+    beta = -1/tau
+    data = np.random.exponential(beta, 300)
+    peak = np.random.normal(1.2, 0.1, 4)
+    data = np.concatenate((data, peak))
+    data = data[(data > 0.1) & (data < 3)]
 
-    pm.execute_notebook(nb, **common_kwargs)
+    totpdf = SignalBackgroundModel(bounds)
 
-    nb = pm.read_notebook(outputnb)
+    model_sb = Model(totpdf)
+    model_sb.add_obs(Observable("x", range=bounds))
 
-    pnull = nb.data["pnull"]
-    significance = nb.data["significance"]
-    clb = nb.data["clb"]
-    clsb = nb.data["clsb"]
+    mean = Constant("mu", value=1.2)
+    sigma = Constant("sigma", value=0.1)
+    Nsig = Variable("Nsig", range=(-10, len((data))), initvalue=0.0,
+                    initstep=1.0)
+    tau_constraint = Gaussian(mean=2.02224, sigma=0.0750417)
+    tau = Variable("tau", range=(0.1, 5.0), initvalue=0.5, initstep=0.05,
+                   constraint=tau_constraint)
+    Nbkg = Variable("Nbkg", range=(0, len((data))*1.1), initvalue=len(data),
+                    initstep=1.0)
 
-    assert pnull <= 3E-7
-    assert significance >= 5
-    assert significance == pytest.approx(5.26, abs=0.005)
-    assert clb <= 3E-7
-    assert pnull == clb
-    assert clsb == pytest.approx(0.535, abs=0.005)
+    model_sb.add_vars([mean, sigma, Nsig, tau, Nbkg])
+    model_sb.add_ext_pars(["Nsig", "Nbkg"])
 
-    os.remove(outputnb)
+    pois = {"Nsig": np.linspace(0.1, 12, 60)}
+    null_hypothesis = model_sb.create_hypothesis(pois)
+
+    alt_hypothesis = model_sb.create_hypothesis({"Nsig": 0})
+
+    calc = AsymptoticCalculator(null_hypothesis, alt_hypothesis, data)
+    calc.qtilde = False
+    calc.CLs = True
+
+    ul = calc.upperlimit()
+
+    assert ul["observed"] == pytest.approx(10.4269, abs=0.05)
+    assert ul["median"] == pytest.approx(10.7644, abs=0.05)
+    assert ul["band_p1"] == pytest.approx(14.9781, abs=0.05)
+    assert ul["band_m1"] == pytest.approx(7.7548, abs=0.05)
+
+    calc.plot(show=False)
+
+
+def test_discovery():
+
+    bounds = (0.1, 3.0)
+
+    np.random.seed(0)
+    tau = -2.0
+    beta = -1/tau
+    data = np.random.exponential(beta, 300)
+    peak = np.random.normal(1.2, 0.1, 40)
+    data = np.concatenate((data, peak))
+    data = data[(data > bounds[0]) & (data < bounds[1])]
+
+    totpdf = SignalBackgroundModel(bounds)
+
+    model_sb = Model(totpdf)
+    model_sb.add_obs(Observable("x", range=bounds))
+
+    mean = Constant("mu", value=1.2)
+    sigma = Constant("sigma", value=0.1)
+    Nsig = Variable("Nsig", range=(-10, len((data))), initvalue=0.0,
+                    initstep=1.0)
+    tau = Variable("tau", range=(0.1, 5.0), initvalue=0.5, initstep=0.05)
+    Nbkg = Variable("Nbkg", range=(0, len((data))*1.1), initvalue=len(data),
+                    initstep=1.0)
+
+    model_sb.add_vars([mean, sigma, Nsig, tau, Nbkg])
+    model_sb.add_ext_pars(["Nsig", "Nbkg"])
+
+    null_hypothesis = model_sb.create_hypothesis({"Nsig": 0})
+
+    pois = {"Nsig": 34.9159}
+    alt_hypothesis = model_sb.create_hypothesis(pois)
+
+    calc = AsymptoticCalculator(null_hypothesis, alt_hypothesis, data)
+    calc.qtilde = False
+    calc.CLs = True
+    calc.onesideddiscovery = True
+
+    result = calc.result()
+
+    assert result["pnull"] <= 3E-7
+    assert result["significance"] >= 5
+    assert result["significance"] == pytest.approx(5.26, abs=0.005)
+    assert result["clb"] <= 3E-7
+    assert result["clb"] == result["pnull"]
+    assert result["clsb"] == pytest.approx(0.535, abs=0.005)

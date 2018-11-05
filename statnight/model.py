@@ -118,7 +118,7 @@ class Model:
         for n in _names:
             if n in self.obs_names():
                 raise ValueError("'{0}' already in observables.".format(n))
-        self._check_params(_names)
+        self._check_params(obs)
         self._obs += obs
 
     def rm_obs(self, name):
@@ -172,7 +172,7 @@ class Model:
         for n in _names:
             if n in self.vars_names():
                 raise ValueError("'{0}' already in variables.".format(n))
-        self._check_params(_names)
+        self._check_params(_vars)
         self._vars += _vars
 
     def rm_vars(self, name):
@@ -238,12 +238,13 @@ class Model:
         ext_pars = self.ext_pars
 
         if params:
-            if all(isinstance(p, Observable) for p in params):
-                obs_ += params
-            elif all(isinstance(p, Variable) for p in params):
-                vars_ += params
-            else:
-                ext_pars += params
+            for p in params:
+                if isinstance(p, Observable):
+                    obs_.append(p.name)
+                elif isinstance(p, (Variable, Constant)):
+                    vars_.append(p.name)
+                else:
+                    ext_pars.append(p)
 
         pars_ = obs_ + vars_
 
@@ -267,8 +268,8 @@ class Model:
 
         ext_in_obs = [e for e in ext_pars if e in obs_]
         if len(ext_in_obs):
-            msg = "{0} cannot be both in observables and in \
-            extended parameters!"
+            msg = "{0} cannot be both in observables and in extended"
+            msg += " parameters!"
             msg = msg.format(ext_in_obs)
             raise ValueError(msg)
 
