@@ -6,7 +6,7 @@ API Documentation
 .. _parameters:
 
 Parameters
--------------
+----------
 
 .. currentmodule:: statnight.parameters
 
@@ -23,7 +23,7 @@ Parameters
 .. _model:
 
 Model
--------------
+-----
 
 .. currentmodule:: statnight.model
 
@@ -68,3 +68,30 @@ Model
     .. automethod:: nuisnames()
 
     .. automethod:: summary
+
+.. _Calculator:
+
+Asymptotic calculator
+---------------------
+
+.. currentmodule:: statnight.calculators.asymptotic_calculator
+
+.. autoclass:: AsymptoticCalculator
+
+    .. automethod:: qtilde()
+
+    .. automethod:: onesided()
+
+    .. automethod:: onesideddiscovery()
+
+    .. automethod:: CLs()
+
+    .. automethod:: bestfitpoi()
+
+    .. automethod:: pvalues()
+
+    .. automethod:: result
+
+    .. automethod:: upperlimit
+
+    .. automethod:: plot

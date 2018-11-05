@@ -2,6 +2,17 @@
 
 
 class Calculator(object):
+    """
+    Basic class for calculators.
+
+    **Arguments:**
+
+        - **null_hypothesis** a statnight.model.Hypothesis representing the
+        null hypothesis of the test.
+        - **null_hypothesis** a statnight.model.Hypothesis representing the
+        alterrnative hypothesis of the test.
+        - **data** a numpy array. The data on which the hypothesis is tested.
+    """
 
     def __init__(self, null_hypothesis, alt_hypothesis, data):
         """ __init__ function """
@@ -37,14 +48,23 @@ class Calculator(object):
 
     @property
     def null_hypothesis(self):
+        """
+        Returns the null hypothesis.
+        """
         return self._null_hypothesis
 
     @property
     def alt_hypothesis(self):
+        """
+        Returns the alternative hypothesis.
+        """
         return self._alt_hypothesis
 
     @property
     def data(self):
+        """
+        Returns the data.
+        """
         return self._data
 
 

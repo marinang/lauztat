@@ -18,6 +18,7 @@ dependencies:
 - `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.4+)
 - `Numpy <https://scipy.org/install.html>`__
 - `iminuit <https://github.com/scikit-hep/iminuit>`__
+- `matplotlib <https://matplotlib.org/users/installing.html>`__ (optionnal)
 
 examples:
 =========

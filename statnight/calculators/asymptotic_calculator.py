@@ -12,9 +12,35 @@ from ..utils.stats import integrate1d
 
 
 class AsymptoticCalculator(Calculator):
+    """
+    Class for for asymptotic calculators. Can be used only with one parameter
+    of interest.
+
+    See G. Cowan, K. Cranmer, E. Gross and O. Vitells: Asymptotic formulae for
+    likelihood- based tests of new physics. Eur. Phys. J., C71:1–19, 2011
+
+    **Arguments:**
+
+        - **null_hypothesis** a statnight.model.Hypothesis representing the \
+        null hypothesis of the test.
+        - **null_hypothesis** a statnight.model.Hypothesis representing the \
+        alterrnative hypothesis of the test.
+        - **data** a numpy array. The data on which the hypothesis is tested.
+        - **qtilde** bool (optionnal). Set the test statistic to qtilde \
+        default **False**.
+        - **onesided** bool (optionnal). Set the test statistic for one sided \
+        upper limit. default **True**.
+        - **onesideddiscovery** bool (optionnal). Set the test statistic for \
+        one sided discovery. default **False**.
+        - **CLs** bool (optionnal). Use CLs for computing upper limit. \
+        default **True**.
+    """
 
     def __init__(self, null_hypothesis, alt_hypothesis, data, qtilde=False,
                  onesided=True, onesideddiscovery=False, CLs=True):
+        """
+        __init__ function
+        """
 
         super(AsymptoticCalculator, self).__init__(null_hypothesis,
                                                    alt_hypothesis, data)
@@ -61,6 +87,9 @@ class AsymptoticCalculator(Calculator):
 
     @property
     def qtilde(self):
+        """
+        Returrns True if qtilde test statistic is used, False if not.
+        """
         return self._qtilde
 
     @qtilde.setter
@@ -72,6 +101,9 @@ class AsymptoticCalculator(Calculator):
 
     @property
     def onesided(self):
+        """
+        Returrns True if a one sided test statistic is used, False if not.
+        """
         return self._onesided
 
     @onesided.setter
@@ -83,6 +115,10 @@ class AsymptoticCalculator(Calculator):
 
     @property
     def onesideddiscovery(self):
+        """
+        Returrns True if a one sided test statistic for discovery is used,
+        False if not.
+        """
         return self._onesideddiscovery
 
     @onesideddiscovery.setter
@@ -94,6 +130,9 @@ class AsymptoticCalculator(Calculator):
 
     @property
     def CLs(self):
+        """
+        Returrns True if CLs is used, False if not.
+        """
         return self._CLs
 
     @CLs.setter
@@ -151,6 +190,9 @@ class AsymptoticCalculator(Calculator):
 
     @property
     def bestfitpoi(self):
+        """
+        Returns the best fit value of the parameter of interest.
+        """
         if hasattr(self, "_best_fit_poi"):
             return self._best_fit_poi
         else:
@@ -164,6 +206,9 @@ class AsymptoticCalculator(Calculator):
 
     @bestfitpoi.setter
     def bestfitpoi(self, value):
+        """
+        Set the best fit value of the parameter of interest for external fit.
+        """
         self._best_fit_poi = value
 
     def asymov_dataset(self):
@@ -295,6 +340,10 @@ class AsymptoticCalculator(Calculator):
         return p_values
 
     def pvalues(self):
+        """
+        Returns p-values scanned for the values of the parameters of interest
+        in the null hypothesis.
+        """
         if hasattr(self, "_p_values"):
             return self._p_values
         else:
@@ -302,6 +351,12 @@ class AsymptoticCalculator(Calculator):
             return self._p_values
 
     def upperlimit(self, alpha=0.05, printlevel=1):
+        """
+        Returns the upper limit of the parameter of interest.
+
+            **Arguments:**
+                - **alpha** (optionnal) confidence level. default **0.05**
+        """
 
         poi_name = self._poi.name
         p_values = self.pvalues()
@@ -356,6 +411,12 @@ class AsymptoticCalculator(Calculator):
         return bands
 
     def result(self, alpha=0.05, printlevel=1):
+        """
+        Returns the result of the hypothesis test.
+
+            **Arguments:**
+                - **alpha** confidence level. default **0.05**
+        """
 
         poi_alt = self._poi_alt_val
 
@@ -402,6 +463,16 @@ class AsymptoticCalculator(Calculator):
         return ret
 
     def plot(self, alpha=0.05, ax=None, show=True, **kwargs):
+        """
+        Plot the pvalues obtained with CLsb/CLb/CLs, and using the asimov
+        datasets (median p_value, +bands), scanned for the different values of
+        the parameter of interest.
+
+            **Arguments:**
+                - **alpha** (optionnal) confidence level. default **0.05**
+                - **ax** (optionnal) matplotlib axis
+                - **show** (optionnal) show the plot. default **True**.
+        """
 
         p_values = self.pvalues()
         poi_values = self._poi_null_val

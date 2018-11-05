@@ -16,7 +16,7 @@ if major >= 3 and minor >= 5:
 	ir += ["matplotlib"]
 else:
 	ir += ["matplotlib<3.0"]
-	
+
 if major < 3 or (major == 3 and minor <= 4):
 	ir += ["ipython<6.0", "ipykernel<5.0.0", "jupyter-console<=5.0.0"]
 	tr += ["jupyter_client"]
@@ -25,7 +25,7 @@ setup(  name = "statnight",
 	version = "1.0",
 	packages = find_packages(exclude = ["tests"]),
 	scripts = [],
-	data_files = ["README.md"],
+	data_files = ["README.rst"],
 	description = "Pure python statistic tools for high energy physics, based on iminuit.",
 	long_description = "",
 	author = "Matthieu Marinangeli",
@@ -53,4 +53,3 @@ setup(  name = "statnight",
 			],
 	platforms = "Any",
 		)
-		
