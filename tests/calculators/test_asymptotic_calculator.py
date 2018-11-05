@@ -6,6 +6,8 @@ from statnight.model import Model
 from scipy.stats import norm
 from statnight.utils.pdf import Gaussian, gaussian, exponential
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 
 location = "docs/examples/notebooks"
 
@@ -38,6 +40,17 @@ def test_constructors():
 
     AsymptoticCalculator(m.create_hypothesis(), alt_hypothesis, data)
 
+    alt_hypothesis2 = m.create_hypothesis(pois={"fs": 0.6, "mu": 0.2})
+
+    with pytest.raises(ValueError):
+        AsymptoticCalculator(null_hypothesis, alt_hypothesis2, data)
+
+    null_hypothesis = m.create_hypothesis(pois={"fs": 0.0})
+    alt_hypothesis = m.create_hypothesis(pois={"mu": 0.6})
+
+    with pytest.raises(ValueError):
+        AsymptoticCalculator(null_hypothesis, alt_hypothesis, data)
+
 
 def test_properties():
 
@@ -53,12 +66,20 @@ def test_properties():
 
     calc.qtilde = True
     assert calc.qtilde is True
+    with pytest.raises(ValueError):
+        calc.qtilde = "True"
     calc.onesided = False
     assert calc.onesided is False
+    with pytest.raises(ValueError):
+        calc.onesided = "True"
     calc.onesideddiscovery = True
     assert calc.onesideddiscovery is True
+    with pytest.raises(ValueError):
+        calc.onesideddiscovery = "True"
     calc.CLs = False
     assert calc.CLs is False
+    with pytest.raises(ValueError):
+        calc.CLs = "True"
 
 
 class SignalBackgroundModel(object):
@@ -129,6 +150,9 @@ def test_upperlimit():
     calc.qtilde = False
     calc.CLs = True
 
+    calc.bestfitpoi = -0.613242
+    calc.bestfitpoi
+
     ul = calc.upperlimit()
 
     assert ul["observed"] == pytest.approx(10.4269, abs=0.05)
@@ -137,6 +161,7 @@ def test_upperlimit():
     assert ul["band_m1"] == pytest.approx(7.7548, abs=0.05)
 
     calc.plot(show=False)
+
 
 
 def test_discovery():

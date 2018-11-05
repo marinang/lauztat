@@ -10,12 +10,6 @@ class MinimalFuncCode(object):
         self.co_varnames = tuple(arg)
         self.co_argcount = len(arg)
 
-    def append(self, varname):
-        tmp = list(self.co_varnames)
-        tmp.append(varname)
-        self.co_varnames = tuple(tmp)
-        self.co_argcount = len(self.co_varnames)
-
 
 class Gaussian:
     """
