@@ -35,8 +35,87 @@
             
   <div class="section" id="api-documentation">
 <span id="api"></span><h1>API Documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="parameters">
+<span id="id1"></span><h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="statnight.parameters.Observable">
+<em class="property">class </em><code class="descclassname">statnight.parameters.</code><code class="descname">Observable</code><span class="sig-paren">(</span><em>name</em>, <em>range</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/parameters.html#Observable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.parameters.Observable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for physics observables.</p>
+<blockquote>
+<div><p><strong>Arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>name</strong> a string</li>
+<li><strong>range</strong> a tuple with lower and upper limits of the range</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt><strong>Example:</strong></dt>
+<dd>obs = Observable(name=”x”, range=(0,100))</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="class">
+<dt id="statnight.parameters.Variable">
+<em class="property">class </em><code class="descclassname">statnight.parameters.</code><code class="descname">Variable</code><span class="sig-paren">(</span><em>name</em>, <em>range</em>, <em>initvalue: (&lt;class 'int'&gt;</em>, <em>&lt;class 'float'&gt;) = -1.0</em>, <em>initstep: (&lt;class 'int'&gt;</em>, <em>&lt;class 'float'&gt;) = -1.0</em>, <em>constraint: (&lt;class 'int'&gt;</em>, <em>&lt;class 'float'&gt;) = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/parameters.html#Variable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.parameters.Variable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for variable paramaters.</p>
+<blockquote>
+<div><p><strong>Arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>name</strong> a string</li>
+<li><strong>value</strong> a tuple with lower and upper limits of the range</li>
+<li><strong>initvalue</strong> (optionnal). a number (int/float) inside the range</li>
+<li><strong>initstep</strong> (optionnal). a number (int/float) lower than the</li>
+</ul>
+<p>range size
+- <strong>constraint</strong> (optionnal). a function with one argument that
+returns a number (int/float)</p>
+</div></blockquote>
+<dl class="docutils">
+<dt><strong>Examples:</strong></dt>
+<dd>var = (name=”sigma”, range=(0, 5))
+var = (name=”sigma”, range=(0, 5), initvalue=2.5, initstep=0.1)
+var = (name=”sigma”, range=(0, 5), constraint= lambda x: (x-2)**2</dd>
+</dl>
+</div></blockquote>
+<dl class="method">
+<dt id="statnight.parameters.Variable.tominuit">
+<code class="descname">tominuit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/parameters.html#Variable.tominuit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.parameters.Variable.tominuit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionnary of parameters for iminuit.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="statnight.parameters.Constant">
+<em class="property">class </em><code class="descclassname">statnight.parameters.</code><code class="descname">Constant</code><span class="sig-paren">(</span><em>name</em>, <em>value: (&lt;class 'int'&gt;</em>, <em>&lt;class 'float'&gt;)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/parameters.html#Constant"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.parameters.Constant" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for constant paramaters:</p>
+<blockquote>
+<div><p><strong>Arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>name</strong> a string</li>
+<li><strong>value</strong> a number (int/float)</li>
+</ul>
+</div></blockquote>
+<dl class="docutils">
+<dt><strong>Example:</strong></dt>
+<dd>const = Constant(name=”mu”, value=”1.2”)</dd>
+</dl>
+</div></blockquote>
+<dl class="method">
+<dt id="statnight.parameters.Constant.tominuit">
+<code class="descname">tominuit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/parameters.html#Constant.tominuit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.parameters.Constant.tominuit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a dictionnary of parameters for iminuit.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 <div class="section" id="model">
-<span id="id1"></span><h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
+<span id="id2"></span><h2>Model<a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="statnight.model.Model">
 <em class="property">class </em><code class="descclassname">statnight.model.</code><code class="descname">Model</code><span class="sig-paren">(</span><em>pdf</em>, <em>observables=[]</em>, <em>variables=[]</em>, <em>ext_pars=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model" title="Permalink to this definition">¶</a></dt>
@@ -102,6 +181,27 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="statnight.model.Model.ext_pars">
+<code class="descname">ext_pars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Model.ext_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the extended parameters of the model.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.add_ext_pars">
+<code class="descname">add_ext_pars</code><span class="sig-paren">(</span><em>ext_pars</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model.add_ext_pars"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model.add_ext_pars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add extended parameters to the model.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div>-<strong>ext_pars</strong> a list of strings.</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Model.extended">
+<code class="descname">extended</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Model.extended" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True is the model has extended parameters, else False.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="statnight.model.Model.create_hypothesis">
 <code class="descname">create_hypothesis</code><span class="sig-paren">(</span><em>pois={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Model.create_hypothesis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Model.create_hypothesis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create an Hypothesis from the model.</p>
@@ -109,6 +209,185 @@
 <blockquote>
 <div>-<strong>pois</strong> dictionnary with name of parameters of interest as keys
 and their values as values.</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="statnight.model.Hypothesis">
+<em class="property">class </em><code class="descclassname">statnight.model.</code><code class="descname">Hypothesis</code><span class="sig-paren">(</span><em>model</em>, <em>pois={}</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Hypothesis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Hypothesis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for statiscal hypothesis definition.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>model</strong> a statnight.model.Model.</li>
+<li><strong>pois</strong> (optional). Dictionnary of parameters of interest names in</li>
+</ul>
+<p>the keys and their values in the values.</p>
+</div></blockquote>
+<dl class="method">
+<dt id="statnight.model.Hypothesis.pois">
+<code class="descname">pois</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Hypothesis.pois" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parameters of interest.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Hypothesis.poinames">
+<code class="descname">poinames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Hypothesis.poinames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parameters of interest names.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Hypothesis.poivalues">
+<code class="descname">poivalues</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Hypothesis.poivalues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parameters of interest values.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Hypothesis.getpoi">
+<code class="descname">getpoi</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Hypothesis.getpoi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Hypothesis.getpoi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the parameter of interest with a given name.</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>name</strong> a string.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Hypothesis.model">
+<code class="descname">model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Hypothesis.model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the model used to create this hypothesis.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Hypothesis.nuis">
+<code class="descname">nuis</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Hypothesis.nuis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the nuisance parameters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Hypothesis.nuisnames">
+<code class="descname">nuisnames</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.model.Hypothesis.nuisnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the nuisance parameters names.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.model.Hypothesis.summary">
+<code class="descname">summary</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/model.html#Hypothesis.summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.model.Hypothesis.summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print a summary of this hypothesis.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="asymptotic-calculator">
+<span id="calculator"></span><h2>Asymptotic calculator<a class="headerlink" href="#asymptotic-calculator" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator">
+<em class="property">class </em><code class="descclassname">statnight.calculators.asymptotic_calculator.</code><code class="descname">AsymptoticCalculator</code><span class="sig-paren">(</span><em>null_hypothesis</em>, <em>alt_hypothesis</em>, <em>data</em>, <em>qtilde=False</em>, <em>onesided=True</em>, <em>onesideddiscovery=False</em>, <em>CLs=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/calculators/asymptotic_calculator.html#AsymptoticCalculator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for for asymptotic calculators. Can be used only with one parameter
+of interest.</p>
+<p>See G. Cowan, K. Cranmer, E. Gross and O. Vitells: Asymptotic formulae for
+likelihood- based tests of new physics. Eur. Phys. J., C71:1–19, 2011</p>
+<p><strong>Arguments:</strong></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>null_hypothesis</strong> a statnight.model.Hypothesis representing the         null hypothesis of the test.</li>
+<li><strong>null_hypothesis</strong> a statnight.model.Hypothesis representing the         alterrnative hypothesis of the test.</li>
+<li><strong>data</strong> a numpy array. The data on which the hypothesis is tested.</li>
+<li><strong>qtilde</strong> bool (optionnal). Set the test statistic to qtilde         default <strong>False</strong>.</li>
+<li><strong>onesided</strong> bool (optionnal). Set the test statistic for one sided         upper limit. default <strong>True</strong>.</li>
+<li><strong>onesideddiscovery</strong> bool (optionnal). Set the test statistic for         one sided discovery. default <strong>False</strong>.</li>
+<li><strong>CLs</strong> bool (optionnal). Use CLs for computing upper limit.         default <strong>True</strong>.</li>
+</ul>
+</div></blockquote>
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.qtilde">
+<code class="descname">qtilde</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.qtilde" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returrns True if qtilde test statistic is used, False if not.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.onesided">
+<code class="descname">onesided</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.onesided" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returrns True if a one sided test statistic is used, False if not.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.onesideddiscovery">
+<code class="descname">onesideddiscovery</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.onesideddiscovery" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returrns True if a one sided test statistic for discovery is used,
+False if not.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.CLs">
+<code class="descname">CLs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.CLs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returrns True if CLs is used, False if not.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.bestfitpoi">
+<code class="descname">bestfitpoi</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.bestfitpoi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the best fit value of the parameter of interest.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.pvalues">
+<code class="descname">pvalues</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/calculators/asymptotic_calculator.html#AsymptoticCalculator.pvalues"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.pvalues" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns p-values scanned for the values of the parameters of interest
+in the null hypothesis.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.result">
+<code class="descname">result</code><span class="sig-paren">(</span><em>alpha=0.05</em>, <em>printlevel=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/calculators/asymptotic_calculator.html#AsymptoticCalculator.result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the result of the hypothesis test.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>Arguments:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>alpha</strong> confidence level. default <strong>0.05</strong></li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.upperlimit">
+<code class="descname">upperlimit</code><span class="sig-paren">(</span><em>alpha=0.05</em>, <em>printlevel=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/calculators/asymptotic_calculator.html#AsymptoticCalculator.upperlimit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.upperlimit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the upper limit of the parameter of interest.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>Arguments:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>alpha</strong> (optionnal) confidence level. default <strong>0.05</strong></li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="statnight.calculators.asymptotic_calculator.AsymptoticCalculator.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>alpha=0.05</em>, <em>ax=None</em>, <em>show=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/statnight/calculators/asymptotic_calculator.html#AsymptoticCalculator.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#statnight.calculators.asymptotic_calculator.AsymptoticCalculator.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the pvalues obtained with CLsb/CLb/CLs, and using the asimov
+datasets (median p_value, +bands), scanned for the different values of
+the parameter of interest.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><strong>Arguments:</strong></dt>
+<dd><ul class="first last simple">
+<li><strong>alpha</strong> (optionnal) confidence level. default <strong>0.05</strong></li>
+<li><strong>ax</strong> (optionnal) matplotlib axis</li>
+<li><strong>show</strong> (optionnal) show the plot. default <strong>True</strong>.</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
 </dd></dl>
 
 </dd></dl>
@@ -136,7 +415,9 @@ and their values as values.</div></blockquote>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#parameters">Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#model">Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#asymptotic-calculator">Asymptotic calculator</a></li>
 </ul>
 </li>
 </ul>

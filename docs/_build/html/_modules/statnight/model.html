@@ -44,8 +44,6 @@
 
 <div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../api.html#statnight.model.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-
-
 <span class="sd">    Class for model definition.</span>
 
 <span class="sd">    **Arguments:**</span>
@@ -85,9 +83,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
 
-    <span class="k">def</span> <span class="nf">_available_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">available_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_names</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vars_names</span><span class="p">()</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_params</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">has_unassigned</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_parameters</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
 <div class="viewcode-block" id="Model.__getitem__"><a class="viewcode-back" href="../../api.html#statnight.model.Model.__getitem__">[docs]</a>    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -121,12 +122,6 @@
 <span class="sd">            -**pois** dictionnary with name of parameters of interest as keys</span>
 <span class="sd">            and their values as values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vars</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">):</span>
-            <span class="n">_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_names</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">vars_names</span><span class="p">()</span>
-            <span class="n">not_assigned</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_params</span><span class="p">]</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> have still to be assigned to </span><span class="se">\</span>
-<span class="s2">                    observables/variables.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">not_assigned</span><span class="p">))</span>
-
         <span class="k">return</span> <span class="n">Hypothesis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pois</span><span class="p">)</span></div>
 
     <span class="c1"># Observables</span>
@@ -158,20 +153,20 @@
         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_names</span><span class="p">():</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39; already in observables.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_params</span><span class="p">(</span><span class="n">_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_params</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_obs</span> <span class="o">+=</span> <span class="n">obs</span></div>
 
-    <span class="k">def</span> <span class="nf">rm_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">rm_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Remove observables from the model.</span>
 
 <span class="sd">        **Arguments:**</span>
 
-<span class="sd">            -**observables** an/a list of statnight.parameters.Observable.</span>
+<span class="sd">            -**names** a list of strings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">names</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_names</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_obs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
@@ -212,20 +207,20 @@
         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">_names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">vars_names</span><span class="p">():</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39; already in variables.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_params</span><span class="p">(</span><span class="n">_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_params</span><span class="p">(</span><span class="n">_vars</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_vars</span> <span class="o">+=</span> <span class="n">_vars</span></div>
 
-    <span class="k">def</span> <span class="nf">rm_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">rm_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Remove variables from the model.</span>
 
 <span class="sd">        **Arguments:**</span>
 
-<span class="sd">            -**variables** an/a list of statnight.parameters.Variable.</span>
+<span class="sd">            -**names** a list of strings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">names</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">vars_names</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
                 <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ext_pars</span><span class="p">:</span>
@@ -243,22 +238,39 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">ext_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the extended parameters of the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ext_pars</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_ext_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ext_par</span><span class="p">):</span>
-        <span class="n">ext_par</span> <span class="o">=</span> <span class="n">check_ext_pars</span><span class="p">(</span><span class="n">ext_par</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ext_par</span><span class="p">:</span>
+<div class="viewcode-block" id="Model.add_ext_pars"><a class="viewcode-back" href="../../api.html#statnight.model.Model.add_ext_pars">[docs]</a>    <span class="k">def</span> <span class="nf">add_ext_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ext_pars</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add extended parameters to the model.</span>
+
+<span class="sd">        **Arguments:**</span>
+
+<span class="sd">            -**ext_pars** a list of strings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ext_pars</span> <span class="o">=</span> <span class="n">check_ext_pars</span><span class="p">(</span><span class="n">ext_pars</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ext_pars</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ext_pars</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&#39;</span><span class="si">{0}</span><span class="s2">&#39; already in extended parameters.&quot;</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_params</span><span class="p">(</span><span class="n">ext_par</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_ext_pars</span> <span class="o">+=</span> <span class="n">ext_par</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_params</span><span class="p">(</span><span class="n">ext_pars</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ext_pars</span> <span class="o">+=</span> <span class="n">ext_pars</span></div>
 
-    <span class="k">def</span> <span class="nf">rm_ext_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">rm_ext_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove extended parameters from the model.</span>
+
+<span class="sd">        **Arguments:**</span>
+
+<span class="sd">            -**names** a list of strings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">names</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ext_pars</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_ext_pars</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -266,6 +278,9 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">extended</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True is the model has extended parameters, else False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ext_pars</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
@@ -276,15 +291,17 @@
         <span class="n">obs_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_names</span><span class="p">()</span>
         <span class="n">vars_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vars_names</span><span class="p">()</span>
         <span class="n">ext_pars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ext_pars</span>
-        <span class="n">pars_</span> <span class="o">=</span> <span class="n">obs_</span> <span class="o">+</span> <span class="n">vars_</span>
 
         <span class="k">if</span> <span class="n">params</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">Observable</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">):</span>
-                <span class="n">obs_</span> <span class="o">+=</span> <span class="n">params</span>
-            <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">):</span>
-                <span class="n">vars_</span> <span class="o">+=</span> <span class="n">params</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">ext_pars</span> <span class="o">+=</span> <span class="n">params</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">Observable</span><span class="p">):</span>
+                    <span class="n">obs_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="n">Variable</span><span class="p">,</span> <span class="n">Constant</span><span class="p">)):</span>
+                    <span class="n">vars_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ext_pars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+        <span class="n">pars_</span> <span class="o">=</span> <span class="n">obs_</span> <span class="o">+</span> <span class="n">vars_</span>
 
         <span class="n">pars</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">pars_</span><span class="o">+</span><span class="n">ext_pars</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">))</span>
 
@@ -306,14 +323,22 @@
 
         <span class="n">ext_in_obs</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ext_pars</span> <span class="k">if</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">obs_</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ext_in_obs</span><span class="p">):</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> cannot be both in observables and in </span><span class="se">\</span>
-<span class="s2">            extended parameters!&quot;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> cannot be both in observables and in extended&quot;</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; parameters!&quot;</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ext_in_obs</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">nll_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the negative log likelihood function of the model given some</span>
+<span class="sd">        data.</span>
 
-        <span class="k">def</span> <span class="nf">compute_null</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="sd">        **Arguments:**</span>
+
+<span class="sd">            -**data** a numpy array containing the values for the observables.</span>
+<span class="sd">            -**weights** a numpy array of weights for each event in data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">compute_nll_</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
 
             <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">v</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">args</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">)}</span>
 
@@ -324,10 +349,8 @@
 
             <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Variable</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">constraint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">fromstatnight</span> <span class="o">=</span> <span class="s2">&quot;statnight.utils.pdf&quot;</span> <span class="ow">in</span> <span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">constraint</span><span class="p">)</span>
-                    <span class="n">hasnll</span> <span class="o">=</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span> <span class="s2">&quot;nll&quot;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">fromstatnight</span> <span class="ow">and</span> <span class="n">hasnll</span><span class="p">:</span>
-                        <span class="n">nll</span> <span class="o">+=</span> <span class="n">v</span><span class="o">.</span><span class="n">constraint</span><span class="o">.</span><span class="n">nll</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">):</span>
+                        <span class="n">nll</span> <span class="o">+=</span> <span class="o">-</span><span class="n">v</span><span class="o">.</span><span class="n">constraint</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">nll</span> <span class="o">+=</span> <span class="o">-</span><span class="n">math</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">constraint</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">name</span><span class="p">]))</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -336,21 +359,35 @@
             <span class="k">return</span> <span class="n">nll</span>
 
         <span class="n">doc</span> <span class="o">=</span> <span class="s2">&quot;def f(&quot;</span><span class="o">+</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vars_names</span><span class="p">())</span><span class="o">+</span><span class="s2">&quot;)&quot;</span>
-        <span class="n">compute_null</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">doc</span>
+        <span class="n">compute_nll_</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">doc</span>
 
-        <span class="k">return</span> <span class="n">compute_null</span></div>
+        <span class="k">return</span> <span class="n">compute_nll_</span></div>
 
 
 <span class="c1"># Hypothesis</span>
 
 
-<span class="k">class</span> <span class="nc">Hypothesis</span><span class="p">:</span>
+<div class="viewcode-block" id="Hypothesis"><a class="viewcode-back" href="../../api.html#statnight.model.Hypothesis">[docs]</a><span class="k">class</span> <span class="nc">Hypothesis</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for statiscal hypothesis definition.</span>
+
+<span class="sd">    **Arguments:**</span>
+
+<span class="sd">        - **model** a statnight.model.Model.</span>
+<span class="sd">        - **pois** (optional). Dictionnary of parameters of interest names in</span>
+<span class="sd">        the keys and their values in the values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">pois</span><span class="o">=</span><span class="p">{}):</span>
         <span class="sd">&quot;&quot;&quot; __init__ function &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Please provide a Model.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">has_unassigned</span><span class="p">():</span>
+            <span class="n">not_assigned</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">available_parameters</span><span class="p">()</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> have still to be assigned to observables/variables.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">not_assigned</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pois</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Please provide a dictionnary with the name of &quot;</span>
@@ -374,22 +411,40 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pois</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the parameters of interest.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pois</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">poivalues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the parameters of interest values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_poivalues</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">poinames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the parameters of interest names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pois</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">parametersofinterest</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the parameters of interest. Same as pois.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pois</span>
 
-    <span class="k">def</span> <span class="nf">getpoi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<div class="viewcode-block" id="Hypothesis.getpoi"><a class="viewcode-back" href="../../api.html#statnight.model.Hypothesis.getpoi">[docs]</a>    <span class="k">def</span> <span class="nf">getpoi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the parameter of interest with a given name.</span>
 
+<span class="sd">        **Arguments:**</span>
+
+<span class="sd">            - **name** a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">poinames</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Unknown parameter </span><span class="si">{0}</span><span class="s2"> not in </span><span class="si">{1}</span><span class="s2">&quot;</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">poinames</span><span class="p">)</span>
@@ -397,22 +452,34 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pois</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="n">p</span>
+                    <span class="k">return</span> <span class="n">p</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the model used to create this hypothesis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">nuis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the nuisance parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nuis</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">nuisanceparameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the nuisance parameters. Same as nuis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nuis</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">nuisnames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the nuisance parameters names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">n</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nuis</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -427,13 +494,16 @@
 
         <span class="k">return</span> <span class="n">toprint</span>
 
-    <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_summary</span><span class="p">())</span>
+<div class="viewcode-block" id="Hypothesis.summary"><a class="viewcode-back" href="../../api.html#statnight.model.Hypothesis.summary">[docs]</a>    <span class="k">def</span> <span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print a summary of this hypothesis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_summary</span><span class="p">())</span></div>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ret</span> <span class="o">=</span> <span class="s2">&quot;Hypothesis object: </span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">ret</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_summary</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">ret</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
 
 <span class="c1"># UTILITIEs</span>
 
@@ -508,14 +578,6 @@
     <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">list_of_values</span><span class="p">:</span>
         <span class="n">value_dict</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">val</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">value_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-
-
-<span class="k">def</span> <span class="nf">haspdf</span><span class="p">(</span><span class="n">hypothesis</span><span class="p">):</span>
-
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hypothesis</span><span class="p">,</span> <span class="n">Hypothesis</span><span class="p">)</span> <span class="ow">and</span> <span class="n">hypothesis</span><span class="o">.</span><span class="n">pdf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
 </pre></div>
 
           </div>
