@@ -410,7 +410,6 @@ class Hypothesis:
 
             - **name** a string.
         """
-
         if name not in self.poinames:
             msg = "Unknown parameter {0} not in {1}"
             msg = msg.format(name, self.poinames)

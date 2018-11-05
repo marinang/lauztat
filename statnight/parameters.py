@@ -89,8 +89,15 @@ class Range(object):
 @attrs(repr=False, slots=True)
 class Observable(Named, Range):
     """
-    Class for physics observables:
-        obs = Observable(name="x", range=(0,100))
+    Class for physics observables.
+
+        **Arguments:**
+
+            - **name** a string
+            - **range** a tuple with lower and upper limits of the range
+
+        **Example:**
+            obs = Observable(name="x", range=(0,100))
     """
 
     def __repr__(self):
@@ -101,13 +108,23 @@ class Observable(Named, Range):
 class Constant(Named):
     """
     Class for constant paramaters:
-        const = Constant(name="mu", value="1.2")
+
+        **Arguments:**
+
+            - **name** a string
+            - **value** a number (int/float)
+
+        **Example:**
+            const = Constant(name="mu", value="1.2")
     """
 
     value = attr.ib(type=(int, float),
                     validator=attr.validators.instance_of((int, float)))
 
     def tominuit(self):
+        """
+        Returns a dictionnary of parameters for iminuit.
+        """
         ret = {}
         ret[self.name] = self.value
         ret["fix_{0}".format(self.name)] = True
@@ -120,10 +137,22 @@ class Constant(Named):
 @attrs(repr=False, slots=True)
 class Variable(Named, Range):
     """
-    Class for variable paramaters:
-        var = (name="sigma", range=(0, 5))
-        var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
-        var = (name="sigma", range=(0, 5), constraint= lambda x: (x-2)**2
+    Class for variable paramaters.
+
+        **Arguments:**
+
+            - **name** a string
+            - **value** a tuple with lower and upper limits of the range
+            - **initvalue** (optionnal). a number (int/float) inside the range
+            - **initstep** (optionnal). a number (int/float) lower than the
+            range size
+            - **constraint** (optionnal). a function with one argument that
+            returns a number (int/float)
+
+        **Examples:**
+            var = (name="sigma", range=(0, 5))
+            var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
+            var = (name="sigma", range=(0, 5), constraint= lambda x: (x-2)**2
     """
 
     initvalue = attr.ib(type=(int, float),
@@ -145,6 +174,9 @@ class Variable(Named, Range):
             self.initstep = (self.range[1] - self.range[0])/100.
 
     def tominuit(self):
+        """
+        Returns a dictionnary of parameters for iminuit.
+        """
         ret = {}
         ret[self.name] = self.initvalue
         ret["limit_{0}".format(self.name)] = self.range

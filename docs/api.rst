@@ -3,6 +3,23 @@
 API Documentation
 ======================
 
+.. _parameters:
+
+Parameters
+-------------
+
+.. currentmodule:: statnight.parameters
+
+.. autoclass:: Observable
+
+.. autoclass:: Variable
+
+    .. automethod:: tominuit
+
+.. autoclass:: Constant
+
+    .. automethod:: tominuit
+
 .. _model:
 
 Model
@@ -26,4 +43,28 @@ Model
 
     .. automethod:: __getitem__
 
+    .. automethod:: ext_pars()
+
+    .. automethod:: add_ext_pars
+
+    .. automethod:: extended()
+
     .. automethod:: create_hypothesis
+
+.. autoclass:: Hypothesis
+
+    .. automethod:: pois()
+
+    .. automethod:: poinames()
+
+    .. automethod:: poivalues()
+
+    .. automethod:: getpoi
+
+    .. automethod:: model()
+
+    .. automethod:: nuis()
+
+    .. automethod:: nuisnames()
+
+    .. automethod:: summary
