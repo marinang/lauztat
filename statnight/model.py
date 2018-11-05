@@ -121,17 +121,17 @@ class Model:
         self._check_params(obs)
         self._obs += obs
 
-    def rm_obs(self, name):
+    def rm_obs(self, names):
         """
         Remove observables from the model.
 
         **Arguments:**
 
-            -**observables** an/a list of statnight.parameters.Observable.
+            -**names** a list of strings.
         """
-        if not isinstance(name, list):
-            name = [name]
-        for n in name:
+        if not isinstance(names, list):
+            names = [names]
+        for n in names:
             if n in self.obs_names():
                 self._obs.remove(self[n])
             else:
@@ -175,17 +175,17 @@ class Model:
         self._check_params(_vars)
         self._vars += _vars
 
-    def rm_vars(self, name):
+    def rm_vars(self, names):
         """
         Remove variables from the model.
 
         **Arguments:**
 
-            -**variables** an/a list of statnight.parameters.Variable.
+            -**names** a list of strings.
         """
-        if not isinstance(name, list):
-            name = [name]
-        for n in name:
+        if not isinstance(names, list):
+            names = [names]
+        for n in names:
             if n in self.vars_names():
                 self._vars.remove(self[n])
                 if n in self.ext_pars:
@@ -203,22 +203,39 @@ class Model:
 
     @property
     def ext_pars(self):
+        """
+        Returns the extended parameters of the model.
+        """
         return list(self._ext_pars)
 
-    def add_ext_pars(self, ext_par):
-        ext_par = check_ext_pars(ext_par)
-        for e in ext_par:
+    def add_ext_pars(self, ext_pars):
+        """
+        Add extended parameters to the model.
+
+        **Arguments:**
+
+            -**ext_pars** a list of strings.
+        """
+        ext_pars = check_ext_pars(ext_pars)
+        for e in ext_pars:
             if e in self.ext_pars:
                 msg = "'{0}' already in extended parameters."
                 msg = msg.format(e)
                 raise ValueError(msg)
-        self._check_params(ext_par)
-        self._ext_pars += ext_par
+        self._check_params(ext_pars)
+        self._ext_pars += ext_pars
 
-    def rm_ext_pars(self, name):
-        if not isinstance(name, list):
-            name = [name]
-        for n in name:
+    def rm_ext_pars(self, names):
+        """
+        Remove extended parameters from the model.
+
+        **Arguments:**
+
+            -**names** a list of strings.
+        """
+        if not isinstance(names, list):
+            names = [names]
+        for n in names:
             if n in self.ext_pars:
                 self._ext_pars.remove(n)
             else:
@@ -226,6 +243,9 @@ class Model:
 
     @property
     def extended(self):
+        """
+        Returns True is the model has extended parameters, else False.
+        """
         if len(self.ext_pars) > 0:
             return True
         else:
@@ -274,8 +294,16 @@ class Model:
             raise ValueError(msg)
 
     def nll_function(self, data, weights=None):
+        """
+        Returns the negative log likelihood function of the model given some
+        data.
 
-        def compute_null(*args):
+        **Arguments:**
+
+            -**data** a numpy array containing the values for the observables.
+            -**weights** a numpy array of weights for each event in data.
+        """
+        def compute_nll_(*args):
 
             kwargs = {v.name: args[i] for i, v in enumerate(self.variables)}
 
@@ -296,15 +324,24 @@ class Model:
             return nll
 
         doc = "def f("+",".join(self.vars_names())+")"
-        compute_null.__doc__ = doc
+        compute_nll_.__doc__ = doc
 
-        return compute_null
+        return compute_nll_
 
 
 # Hypothesis
 
 
 class Hypothesis:
+    """
+    Class for statiscal hypothesis definition.
+
+    **Arguments:**
+
+        - **model** a statnight.model.Model.
+        - **pois** (optional). Dictionnary of parameters of interest names in
+        the keys and their values in the values.
+    """
 
     def __init__(self, model, pois={}):
         """ __init__ function """
@@ -339,21 +376,40 @@ class Hypothesis:
 
     @property
     def pois(self):
+        """
+        Returns the parameters of interest.
+        """
         return self._pois
 
     @property
     def poivalues(self):
+        """
+        Returns the parameters of interest values.
+        """
         return dict(self._poivalues)
 
     @property
     def poinames(self):
+        """
+        Returns the parameters of interest names.
+        """
         return [p.name for p in self.pois]
 
     @property
     def parametersofinterest(self):
+        """
+        Returns the parameters of interest. Same as pois.
+        """
         return self.pois
 
     def getpoi(self, name):
+        """
+        Returns the parameter of interest with a given name.
+
+        **Arguments:**
+
+            - **name** a string.
+        """
 
         if name not in self.poinames:
             msg = "Unknown parameter {0} not in {1}"
@@ -366,18 +422,30 @@ class Hypothesis:
 
     @property
     def model(self):
+        """
+        Returns the model used to create this hypothesis.
+        """
         return self._model
 
     @property
     def nuis(self):
+        """
+        Returns the nuisance parameters.
+        """
         return self._nuis
 
     @property
     def nuisanceparameters(self):
+        """
+        Returns the nuisance parameters. Same as nuis.
+        """
         return self.nuis
 
     @property
     def nuisnames(self):
+        """
+        Returns the nuisance parameters names.
+        """
         return [n.name for n in self.nuis]
 
     def _summary(self):
@@ -393,6 +461,9 @@ class Hypothesis:
         return toprint
 
     def summary(self):
+        """
+        Print a summary of this hypothesis.
+        """
         print(self._summary())
 
     def __repr__(self):

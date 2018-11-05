@@ -1,4 +1,9 @@
 #!/usr/bin/python
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY', '') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
 import pytest
 from statnight.calculators import AsymptoticCalculator
 from statnight.parameters import Observable, Variable, Constant
@@ -6,8 +11,7 @@ from statnight.model import Model
 from scipy.stats import norm
 from statnight.utils.pdf import Gaussian, gaussian, exponential
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
+
 
 location = "docs/examples/notebooks"
 
