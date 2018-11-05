@@ -16,7 +16,6 @@ install:
   - pip install --only-binary=numpy,scipy numpy scipy
   - pip install coveralls
   - pip install pytest
-  - pip install nbval
 
 script:
   coverage run --source=statnight setup.py test
