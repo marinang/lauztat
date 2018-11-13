@@ -9,7 +9,7 @@ import numpy as np
 from scipy.optimize import brentq
 from ..utils.stats import integrate1d
 from ..utils.wrappers import MinuitWrapper, LossFunctionWrapper
-from ..parameters import Constant
+from ..parameters import Constant, POI
 
 
 class AsymptoticCalculator(Calculator):
@@ -19,22 +19,6 @@ class AsymptoticCalculator(Calculator):
 
     See G. Cowan, K. Cranmer, E. Gross and O. Vitells: Asymptotic formulae for
     likelihood- based tests of new physics. Eur. Phys. J., C71:1–19, 2011
-
-    **Arguments:**
-
-        - **null_hypothesis** a statnight.model.Hypothesis representing the \
-        null hypothesis of the test.
-        - **null_hypothesis** a statnight.model.Hypothesis representing the \
-        alterrnative hypothesis of the test.
-        - **data** a numpy array. The data on which the hypothesis is tested.
-        - **qtilde** bool (optionnal). Set the test statistic to qtilde \
-        default **False**.
-        - **onesided** bool (optionnal). Set the test statistic for one sided \
-        upper limit. default **True**.
-        - **onesideddiscovery** bool (optionnal). Set the test statistic for \
-        one sided discovery. default **False**.
-        - **CLs** bool (optionnal). Use CLs for computing upper limit. \
-        default **True**.
     """
 
     def __init__(self):
@@ -50,7 +34,7 @@ class AsymptoticCalculator(Calculator):
         if hasattr(self, "_asymov_dataset"):
             return self._asymov_dataset
         else:
-            hypo = self._alt_hypothesis
+            hypo = self.alt_hypothesis
             costfunc = hypo.costfunction
             model = costfunc.model.copy()
             data = costfunc.data
@@ -116,21 +100,26 @@ class AsymptoticCalculator(Calculator):
 
         self._alt_hypothesis = alt_hypothesis
         poialt = alt_hypothesis.pois
+        poiname = poialt.name
 
         nll_poia_alt = self.asy_nll(poialt)
 
-        nll_poin_alt = self.asy_nll(poinull)
+        if isinstance(poinull, POI):
+            nll_poin_alt = self.asy_nll(poinull)
+        else:
+            nll_poin_alt = np.empty(qnull.shape)
+            for i, poinull_ in np.ndenumerate(poinull):
+                nll_poin_alt[i] = self.asy_nll(POI(poiname, poinull_))
 
         qalt = 2*(nll_poin_alt - nll_poia_alt)
 
-        if qalt < 0:
-            qalt = 0.0000001
+        qalt = np.where(qalt < 0, 0.000001, qalt)
 
         pnull = -1.
         palt = -1.
 
-        sqrtqnull = math.sqrt(qnull)
-        sqrtqalt = math.sqrt(qalt)
+        sqrtqnull = np.sqrt(qnull)
+        sqrtqalt = np.sqrt(qalt)
 
         if not qtilde:
             if onesided or onesideddiscovery:
@@ -153,23 +142,25 @@ class AsymptoticCalculator(Calculator):
 
     def expected_pvalue(self, poinull, poialt, nsigma, CLs=True):
 
-        nll_poia_alt = self.asy_nll(poialt)
+        poiname = poialt.name
+        nll_poin_alt = np.empty(poinull.shape)
+        for i, poinull_ in np.ndenumerate(poinull):
+            nll_poin_alt[i] = self.asy_nll(POI(poiname, poinull_))
 
-        nll_poin_alt = self.asy_nll(poinull)
+        nll_poia_alt = self.asy_nll(poialt)
 
         qalt = 2*(nll_poin_alt - nll_poia_alt)
 
-        if qalt < 0:
-            qalt = 0.0000001
+        qalt = np.where(qalt < 0, 0.000001, qalt)
 
-        p_clsb = 1 - norm.cdf(math.sqrt(qalt) - nsigma)
+        p_clsb = 1 - norm.cdf(np.sqrt(qalt) - nsigma)
 
         if CLs:
             p_clb = norm.cdf(nsigma)
             p_cls = p_clsb / p_clb
-            return max(p_cls, 0.)
+            return np.where(p_cls < 0, 0, p_cls)
         else:
-            return max(p_clsb, 0.)
+            return np.where(p_clsb < 0, 0, p_clsb)
 
     def expected_poi(self, poinull, poialt, n=0.0, alpha=0.05,
                      CLs=False):
