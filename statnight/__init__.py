@@ -1,4 +1,4 @@
 #!/usr/bin/python
 
-from .model import Model, Hypothesis
-from .parameters import Observable, Variable, Constant
+from .hypothesis import Hypothesis
+from .parameters import Observable, Variable, Constant, POI
