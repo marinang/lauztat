@@ -7,6 +7,7 @@ Parameter classes
 from iminuit import describe
 import attr
 from attr import attrs, attrib
+from .utils.pdf import gaussian
 
 
 def check_range(instance=None, range=None, value=None):
@@ -43,6 +44,15 @@ def check_initstep(instance=None, initstep=None, value=None):
         if value >= (_range[1] - _range[0]):
             raise ValueError("Initial step should be strictly lower than the \
             range:{0}.".format(_range))
+
+
+def check_pos(instance=None, attribute=None, value=None):
+    """
+    Validator for strictly positive number attribute.
+    """
+    name = attribute.name
+    if value <= 0:
+        raise ValueError("{0} should be strictly positive.".format(name))
 
 
 def check_constraint(instance=None, constraint=None, value=None):
@@ -146,13 +156,10 @@ class Variable(Named, Range):
             - **initvalue** (optionnal). a number (int/float) inside the range
             - **initstep** (optionnal). a number (int/float) lower than the
             range size
-            - **constraint** (optionnal). a function with one argument that
-            returns a number (int/float)
 
         **Examples:**
             var = (name="sigma", range=(0, 5))
             var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
-            var = (name="sigma", range=(0, 5), constraint= lambda x: (x-2)**2
     """
 
     initvalue = attr.ib(type=(int, float),
@@ -163,9 +170,6 @@ class Variable(Named, Range):
                        validator=[attr.validators.instance_of((int, float)),
                                   check_initstep],
                        default=-1.)
-    constraint = attr.ib(type=(int, float),
-                         validator=check_constraint,
-                         default=None)
 
     def __attrs_post_init__(self):
         if self.initvalue == -1:
@@ -184,11 +188,101 @@ class Variable(Named, Range):
         return ret
 
     def __repr__(self):
-        basis = "Variable('{0}', initvalue={1}, range={2}, initstep={3}"
-        basis = basis.format(self.name, self.initvalue,
-                             self.range, self.initstep)
+        rep = "Variable('{0}', initvalue={1}, range={2}, initstep={3})"
+        rep = rep.format(self.name, self.initvalue, self.range, self.initstep)
+        return rep
 
-        if self.constraint:
-            return basis + ", constraint={0})".format(self.constraint)
 
-        return basis + ")"
+@attrs(repr=False, slots=True)
+class POI(Named):
+    """
+    Class for parameters of interest:
+
+        **Arguments:**
+
+            - **name** a string
+            - **value** (optional) a number (int/float)
+
+        **Example:**
+            poi = POI(name="Nisg", value="0")
+            poi = POI(name="Nisg")
+    """
+
+    value = attr.ib(type=(int, float),
+                    validator=attr.validators.instance_of((int, float)),
+                    default=-99999999)
+
+    def __attrs_post_init__(self):
+        if self.value == -99999999:
+            self.value = None
+
+    def tominuit(self):
+        """
+        Returns a dictionnary of parameters for iminuit.
+        """
+        ret = {}
+        if self.value:
+            ret[self.name] = self.value
+            ret["fix_{0}".format(self.name)] = True
+        return ret
+
+    def __repr__(self):
+        repr = "POI('{0}'".format(self.name)
+        if self.value is not None:
+            return "{0}, value={1})".format(repr, self.value)
+        else:
+            return repr + ")"
+
+
+@attrs(repr=False, slots=True)
+class GaussianConstrained(Named, Range):
+    """
+    Class for gaussian constrained paramaters.
+
+        **Arguments:**
+
+            - **name** a string
+            - **value** a tuple with lower and upper limits of the range
+            - **mu** a number (int/float). Mean value of the gaussian.
+            - **sigma** a number > 0 (int/float). Sigma of the gaussian.
+            - **initstep** (optionnal). a number (int/float) lower than the
+            range size
+
+    """
+
+    mu = attr.ib(type=(int, float),
+                 validator=[attr.validators.instance_of((int, float))])
+    sigma = attr.ib(type=(int, float),
+                    validator=[attr.validators.instance_of((int, float)),
+                               check_pos])
+    initstep = attr.ib(type=(int, float),
+                       validator=[attr.validators.instance_of((int, float)),
+                                  check_initstep], default=-1.)
+
+    def __attrs_post_init__(self):
+        if self.initstep == -1:
+            self.initstep = (self.range[1] - self.range[0])/100.
+
+    def tominuit(self):
+        """
+        Returns a dictionnary of parameters for iminuit.
+        """
+        ret = {}
+        ret[self.name] = self.mu
+        ret["limit_{0}".format(self.name)] = self.range
+        ret["error_{0}".format(self.name)] = self.initstep
+        return ret
+
+    def evalconstraint(self, param):
+        return gaussian(param, self.mu, self.sigma)
+
+    def log_evalconstraint(self, param):
+        return gaussian.log(param, self.mu, self.sigma)
+
+    def __repr__(self):
+        rep = "GaussianConstrained('{0}', mu={1}, sigma={2}, range={3},"
+        rep += " initstep={4})"
+        rep = rep.format(self.name, self.mu, self.sigma, self.range,
+                         self.initstep)
+
+        return rep
