@@ -16,7 +16,6 @@ class UpperLimit(HypoTest):
         self._pvalues = {}
         self._alpha = alpha
         self._CLs = CLs
-        self._bestfitpoi = None
 
     @property
     def alpha(self):
@@ -33,23 +32,6 @@ class UpperLimit(HypoTest):
     @CLs.setter
     def CLs(self, CLs):
         self._CLs = CLs
-
-    @property
-    def bestfitpoi(self):
-        if self._bestfitpoi is None:
-            msg = "Get fit best values for parameter of interest for the null"
-            msg += " hypothesis!"
-            print(msg)
-            self.null_minuit().migrad()
-            poiname = self.null_hypothesis.pois.name
-            poival = self.null_minuit().values[poiname]
-            bestfitpoi = POI(poiname, poival)
-            self._bestfitpoi = bestfitpoi
-        return self._bestfitpoi
-
-    @bestfitpoi.setter
-    def bestfitpoi(self, bestfitpoi):
-        self._bestfitpoi = bestfitpoi
 
     @property
     def scanvalues(self):
@@ -80,52 +62,43 @@ class UpperLimit(HypoTest):
         poialt = althypo.pois
 
         _shape = len(self.scanvalues)
+        poinull = self.scanvalues
 
-        p_values = {
-                "clsb":   np.zeros(_shape),
-                "clb":    np.zeros(_shape),
-                "exp":    np.zeros(_shape),
-                "exp_p1": np.zeros(_shape),
-                "exp_p2": np.zeros(_shape),
-                "exp_m1": np.zeros(_shape),
-                "exp_m2": np.zeros(_shape)
-                }
+        p_values = {}
 
         if self.qtilde:
             nll_0_null = self.null_nll(0)
 
-        bestpoi = self.bestfitpoi
-        nll_bpoiv_null = self.null_nll(bestpoi)
+        nll_poia_null = self.null_nll(poialt)
 
         poiname = self.null_hypothesis.pois.name
 
-        for i, poinull in np.ndenumerate(self.scanvalues):
+        nll_poin_null = np.empty(_shape)
+        for i, poinull_ in np.ndenumerate(poinull):
+            nll_poin_null[i] = self.null_nll(POI(poiname, poinull_))
 
-            poinull = POI(poiname, poinull)
+        condition = poialt.value > self.scanvalues
+        qnull = np.where(condition, 0, 2*(nll_poin_null - nll_poia_null))
 
-            nll_pv_null = self.null_nll(poinull)
+        if self.qtilde:
+            condition = poialt.value < 0
+            q = 2*(nll_poin_null - nll_0_null)
+            qnull = np.where(condition, q, qnull)
 
-            if poialt > poinull:
-                qnull = 0
-            elif poialt.value < 0 and self.qtilde:
-                qnull = 2*(nll_pv_null - nll_0_null)
-            else:
-                qnull = 2*(nll_pv_null - nll_bpoiv_null)
+        pnull, palt = self.calculator.pvalue(qnull, poinull, althypo,
+                                             qtilde=self.qtilde,
+                                             onesided=True)
 
-            pnull, palt = self.calculator.pvalue(qnull, poinull, althypo,
-                                                 qtilde=self.qtilde,
-                                                 onesided=True)
+        p_values["clsb"] = pnull
+        p_values["clb"] = palt
 
-            p_values["clsb"][i] = pnull
-            p_values["clb"][i] = palt
+        exp_pval = self.calculator.expected_pvalue
 
-            exp_pval = self.calculator.expected_pvalue
-
-            p_values["exp"][i] = exp_pval(poinull, poialt, 0, self.CLs)
-            p_values["exp_p1"][i] = exp_pval(poinull, poialt, 1, self.CLs)
-            p_values["exp_p2"][i] = exp_pval(poinull, poialt, 2, self.CLs)
-            p_values["exp_m1"][i] = exp_pval(poinull, poialt, -1, self.CLs)
-            p_values["exp_m2"][i] = exp_pval(poinull, poialt, -2, self.CLs)
+        p_values["exp"] = exp_pval(poinull, poialt, 0, self.CLs)
+        p_values["exp_p1"] = exp_pval(poinull, poialt, 1, self.CLs)
+        p_values["exp_p2"] = exp_pval(poinull, poialt, 2, self.CLs)
+        p_values["exp_m1"] = exp_pval(poinull, poialt, -1, self.CLs)
+        p_values["exp_m2"] = exp_pval(poinull, poialt, -2, self.CLs)
 
         p_values["cls"] = p_values["clsb"] / p_values["clb"]
 

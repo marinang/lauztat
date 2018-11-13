@@ -54,53 +54,40 @@ class ConfidenceInterval(HypoTest):
         poialt = althypo.pois
 
         _shape = len(self.scanvalues)
+        poinull = self.scanvalues
 
-        p_values = {
-                "clsb":   np.zeros(_shape),
-                "clb":    np.zeros(_shape),
-                "exp":    np.zeros(_shape),
-                "exp_p1": np.zeros(_shape),
-                "exp_p2": np.zeros(_shape),
-                "exp_m1": np.zeros(_shape),
-                "exp_m2": np.zeros(_shape)
-                }
-
-        if self.qtilde:
-            nll_0_null = self.null_nll(0)
+        p_values = {}
 
         nll_poia_null = self.null_nll(poialt)
 
         poiname = self.null_hypothesis.pois.name
 
-        for i, poinull in np.ndenumerate(self.scanvalues):
+        nll_poin_null = np.empty(_shape)
+        for i, poinull_ in np.ndenumerate(poinull):
+            nll_poin_null[i] = self.null_nll(POI(poiname, poinull_))
 
-            poinull = POI(poiname, poinull)
+        qnull = 2*(nll_poin_null - nll_poia_null)
 
-            nll_poin_null = self.null_nll(poinull)
+        if self.qtilde:
+            nll_0_null = self.null_nll(0)
+            q = 2*(nll_poin_null - nll_0_null)
+            condition = poialt.value < 0
+            qnull = np.where(condition, q, qnull)
 
-            if poialt.value < 0 and self.qtilde:
-                qnull = 2*(nll_poin_null - nll_0_null)
-            else:
-                qnull = 2*(nll_poin_null - nll_poia_null)
+        pnull, palt = self.calculator.pvalue(qnull, poinull, althypo,
+                                             qtilde=self.qtilde,
+                                             onesided=False)
 
-            self.null_nll
+        p_values["clsb"] = pnull
+        p_values["clb"] = palt
 
-            pnull, palt = self.calculator.pvalue(qnull, poinull, althypo,
-                                                 qtilde=self.qtilde,
-                                                 onesided=False)
+        exp_pval = self.calculator.expected_pvalue
 
-            p_values["clsb"][i] = pnull
-            p_values["clb"][i] = palt
-
-            exp_pval = self.calculator.expected_pvalue
-
-            p_values["exp"][i] = exp_pval(poinull, poialt, 0, CLs=False)
-            p_values["exp_p1"][i] = exp_pval(poinull, poialt, 1, CLs=False)
-            p_values["exp_p2"][i] = exp_pval(poinull, poialt, 2, CLs=False)
-            p_values["exp_m1"][i] = exp_pval(poinull, poialt, -1, CLs=False)
-            p_values["exp_m2"][i] = exp_pval(poinull, poialt, -2, CLs=False)
-
-        p_values["cls"] = p_values["clsb"] / p_values["clb"]
+        p_values["exp"] = exp_pval(poinull, poialt, 0, CLs=False)
+        p_values["exp_p1"] = exp_pval(poinull, poialt, 1, CLs=False)
+        p_values["exp_p2"] = exp_pval(poinull, poialt, 2, CLs=False)
+        p_values["exp_m1"] = exp_pval(poinull, poialt, -1, CLs=False)
+        p_values["exp_m2"] = exp_pval(poinull, poialt, -2, CLs=False)
 
         return p_values
 
