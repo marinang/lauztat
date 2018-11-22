@@ -245,6 +245,7 @@ class ModelWrapper(object):
             dict[o.name] = o.todict()
         for v in self.vars:
             dict[v.name] = v.todict()
+        dict["extended"] = self.extended
         return dict
 
 
