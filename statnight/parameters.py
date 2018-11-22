@@ -7,7 +7,7 @@ Parameter classes
 from iminuit import describe
 import attr
 from attr import attrs, attrib
-from .utils.pdf import gaussian
+from math import pi, sqrt, exp, log
 
 
 def check_range(instance=None, range=None, value=None):
@@ -309,10 +309,19 @@ class GaussianConstrained(Named, Range):
         return dict
 
     def evalconstraint(self, param):
-        return gaussian(param, self.mu, self.sigma)
+        if self.sigma < 1e-10:
+            ret = 1e-300
+        else:
+            d = (param-self.mu)/self.sigma
+            d2 = d*d
+            ret = 1/(sqrt(2*pi)*self.sigma)*exp(-0.5*d2)
+
+        return ret
 
     def log_evalconstraint(self, param):
-        return gaussian.log(param, self.mu, self.sigma)
+        ret = log(1 / (self.sigma * sqrt(2*pi)))
+        ret += -0.5 * ((param - self.mu) / self.sigma)**2
+        return ret
 
     def __repr__(self):
         rep = "GaussianConstrained('{0}', mu={1}, sigma={2}, range={3},"
