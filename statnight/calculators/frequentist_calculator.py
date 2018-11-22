@@ -5,7 +5,6 @@ from .calculator import Calculator
 from ..parameters import POI
 import numpy as np
 from scipy.stats import norm
-import matplotlib.pyplot as plt
 from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline
 
@@ -63,10 +62,22 @@ class FrequentistCalculator(Calculator):
             minimizers, toyresult = self.dotoys(p, self.ntoysnull)
             nllp = np.empty(len(minimizers))
 
+            nlldict = {}
+
+            if p.value != 0:
+                p_ = POI(p.name, 0.0)
+                nllp_ = np.empty(len(minimizers))
+
             for i, m in minimizers.items():
                 nllp[i] = m.profile(p.name, p.value)
+                if p.value != 0:
+                    nllp_[i] = m.profile(p.name, 0.0)
 
-            toyresult["nll"] = {p: nllp}
+            nlldict[p] = nllp
+            if p.value != 0:
+                nlldict[p_] = nllp_
+
+            toyresult["nll"] = nlldict
 
     def dotoys_alt(self, poigen, poinull):
         if poigen not in self._toysresults.keys():
@@ -76,19 +87,34 @@ class FrequentistCalculator(Calculator):
             minimizers, toyresult = self.dotoys(poigen, self.ntoysnull)
             nlldict = {}
 
-            for p in poinull:
+            def addnll(p):
                 nllp = np.empty(len(minimizers))
                 for i, m in minimizers.items():
                     nllp[i] = m.profile(p.name, p.value)
                 nlldict[p] = nllp
 
-                toyresult["nll"] = nlldict
+            for p in poinull:
+                addnll(p)
 
-    def poi_bestfit(self, poigen):
-        return self._toysresults[poigen]["bestfit"]["values"]
+            if 0. not in poinull.value:
+                p = POI(poinull.name, 0.0)
+                addnll(p)
 
-    def nll_bestfit(self, poigen):
-        return self._toysresults[poigen]["bestfit"]["nll"]
+            toyresult["nll"] = nlldict
+
+    def poi_bestfit(self, poigen, qtilde=False):
+        bf = self._toysresults[poigen]["bestfit"]["values"]
+        if qtilde:
+            bf = np.where(bf < 0, 0, bf)
+        return bf
+
+    def nll_bestfit(self, poigen, qtilde=False):
+        nll = self._toysresults[poigen]["bestfit"]["nll"]
+        if qtilde:
+            bf = self._toysresults[poigen]["bestfit"]["values"]
+            nll_zero = self.nll(poigen, POI(poigen.name, 0.))
+            nll = np.where(bf < 0, nll_zero, nll)
+        return nll
 
     def nll(self, poigen, poi):
         return self._toysresults[poigen]["nll"][poi]
@@ -96,14 +122,14 @@ class FrequentistCalculator(Calculator):
     def q(self, nll1, nll2):
         return 2*(nll1 - nll2)
 
-    def qnull(self, poi):
+    def qnull(self, poi, qtilde=False):
         nll1 = self.nll(poi, poi)
-        nll2 = self.nll_bestfit(poi)
+        nll2 = self.nll_bestfit(poi, qtilde)
         return self.q(nll1, nll2)
 
-    def qalt(self, poi, poialt):
+    def qalt(self, poi, poialt, qtilde=False):
         nll1 = self.nll(poialt, poi)
-        nll2 = self.nll_bestfit(poialt)
+        nll2 = self.nll_bestfit(poialt, qtilde)
         return self.q(nll1, nll2)
 
     def pvalue_q(self, qobs, poinull, poialt=None, qtilde=False, onesided=True,
@@ -127,14 +153,14 @@ class FrequentistCalculator(Calculator):
             palt = None
 
         for i, p in enumerate(poinull):
-            qnulldist = self.qnull(p)
-            bestfitnull = self.poi_bestfit(p)
+            qnulldist = self.qnull(p, qtilde)
+            bestfitnull = self.poi_bestfit(p, qtilde)
             qnulldist = qdist(qnulldist, bestfitnull, p.value, onesided,
                               onesideddiscovery)
             pnull[i] = pvalue_i(qnulldist, qobs[i])
             if needpalt:
-                qaltdist = self.qalt(p, poialt)
-                bestfitalt = self.poi_bestfit(poialt)
+                qaltdist = self.qalt(p, poialt, qtilde)
+                bestfitalt = self.poi_bestfit(poialt, qtilde)
                 qaltdist = qdist(qaltdist, bestfitalt, p.value, onesided,
                                  onesideddiscovery)
                 palt[i] = pvalue_i(qaltdist, qobs[i])
@@ -146,7 +172,11 @@ class FrequentistCalculator(Calculator):
 
         poiname = poinull.name
 
-        bestfitpoi = POI(poiname, self.config.bestfit[poiname])
+        bf = self.config.bestfit[poiname]
+        if qtilde and bf < 0:
+            bestfitpoi = POI(poiname, 0)
+        else:
+            bestfitpoi = POI(poiname, bf)
 
         nll_poinull_obs = self.obs_nll(poinull)
         nll_bestfitpoi_obs = self.obs_nll(bestfitpoi)
@@ -203,8 +233,8 @@ class FrequentistCalculator(Calculator):
         os = onesided
         osd = onesideddiscovery
 
-        bf = self.poi_bestfit(poialt)
-        nll_bf_alt = self.nll_bestfit(poialt)
+        bf = self.poi_bestfit(poialt, qtilde)
+        nll_bf_alt = self.nll_bestfit(poialt, qtilde)
 
         q = {p: self.q(self.nll(poialt, p), nll_bf_alt) for p in poinull}
         q = {p: qdist(q[p], bf, p.value, True, False) for p in poinull}
