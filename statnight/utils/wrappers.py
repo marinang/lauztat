@@ -3,6 +3,8 @@ from ..parameters import Observable, Variable, Constant, GaussianConstrained
 import collections
 from ..utils.stats import integrate1d
 import copy
+from probfit import gen_toy
+from scipy.stats import norm, poisson
 
 
 class func_code(object):
@@ -174,6 +176,12 @@ class ModelWrapper(object):
         """
         return [v.name for v in self.vars]
 
+    def parts(self):
+        if hasattr(self.model, "parts"):
+            return self.model.parts()
+        else:
+            return None
+
     def _check_params(self, params=None):
 
         obs_ = self.obs_names()
@@ -205,6 +213,27 @@ class ModelWrapper(object):
             msg = "{0} cannot be both in observables and in variables!"
             msg = msg.format(duplicates)
             raise ValueError(msg)
+
+    def sample(self, nsample=None, **kwargs):
+
+        if not self.extended:
+            if nsample is None:
+                msg = "Please provide the number of sample to generate."
+                raise ValueError(msg)
+        else:
+            nsample = 0
+
+        for p in self.variables:
+            if isinstance(p, GaussianConstrained):
+                val = norm.rvs(loc=p.mu, scale=p.sigma)
+                kwargs[p.name] = val
+            elif self.extended:
+                if isinstance(p, Variable) and p.isyield:
+                    val = poisson.rvs(mu=kwargs[p.name])
+                    kwargs[p.name] = val
+                    nsample += val
+
+        return gen_toy(self.model, nsample, bound=self.obs[0].range, **kwargs)
 
 
 class LossFunctionWrapper(object):
@@ -278,7 +307,7 @@ class LossFunctionWrapper(object):
         model_p = next(p for p in initparam if p in ["model", "pdf", "f"])
 
         if weights is not None and len(weights) != len(data):
-            raise ValueError("Number of entries in the dataset shoould be\
+            raise ValueError("Number of entries in the dataset should be\
                              equal to the number of weights.")
 
         kwargs = {model_p: model, "data": data, "weights": weights}
@@ -286,25 +315,42 @@ class LossFunctionWrapper(object):
         if model.extended and "extended" in initparam:
             kwargs["extended"] = True
 
+        print(kwargs)
+
         lossfunction = lossclass(**kwargs)
         return LossFunctionWrapper(lossfunction)
 
 
-def MinuitWrapper(lossfunction, pedantic=False):
+class MinimizerWrapper(object):
 
-    if not isinstance(lossfunction, LossFunctionWrapper):
-        raise ValueError("Loss function need to be wrapped under\
-                         statnight.utils.LossFunctionWrapper.")
+    def __init__(self, lossfunction, **kwargs):
 
-    params = {}
+        if not isinstance(lossfunction, LossFunctionWrapper):
+            raise ValueError("Loss function need to be wrapped under\
+                             statnight.utils.LossFunctionWrapper.")
+        for v in lossfunction.model.variables:
+            pars = v.tominuit()
+            kwargs.update(pars)
 
-    for v in lossfunction.model.variables:
-        pars = v.tominuit()
-        params.update(pars)
+        minuit = Minuit(lossfunction, errordef=0.5, **kwargs)
 
-    minuit = Minuit(lossfunction, errordef=0.5, pedantic=pedantic, **params)
+        self._minuit = minuit
 
-    return minuit
+    def minimize(self):
+        self._minuit.migrad()
+
+    @property
+    def values(self):
+        return self._minuit.values
+
+    @property
+    def errors(self):
+        return self._minuit.errors
+
+    def profile(self, param, value):
+        range = (value, -1.)
+        prof = self._minuit.mnprofile(param, 1, range)
+        return prof[1]
 
 
 def check_obs(observables):

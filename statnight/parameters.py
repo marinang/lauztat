@@ -170,6 +170,9 @@ class Variable(Named, Range):
                        validator=[attr.validators.instance_of((int, float)),
                                   check_initstep],
                        default=-1.)
+    isyield = attr.ib(type=(bool),
+                      validator=attr.validators.instance_of(bool),
+                      default=False)
 
     def __attrs_post_init__(self):
         if self.initvalue == -1:
@@ -193,7 +196,20 @@ class Variable(Named, Range):
         return rep
 
 
-@attrs(repr=False, slots=True)
+def check_poi(instance=None, poivalue=None, value=None):
+    msg = "Please provide a number (int/float) or a list/array of numbers."
+    if isinstance(value, (int, float)):
+        pass
+    elif hasattr(value, "__iter__"):
+        if all(isinstance(v, (int, float)) for v in value):
+            pass
+        else:
+            raise ValueError(msg)
+    else:
+        raise ValueError(msg)
+
+
+@attrs(repr=False, frozen=True)
 class POI(Named):
     """
     Class for parameters of interest:
@@ -201,30 +217,14 @@ class POI(Named):
         **Arguments:**
 
             - **name** a string
-            - **value** (optional) a number (int/float)
+            - **value** a single or a list of int/float.
 
         **Example:**
-            poi = POI(name="Nisg", value="0")
-            poi = POI(name="Nisg")
+            poi = POI(name="Nisg", value=0)
+            poi = POI(name="Nisg", value=np.linspace(0,10,10))
     """
 
-    value = attr.ib(type=(int, float),
-                    validator=attr.validators.instance_of((int, float)),
-                    default=-99999999)
-
-    def __attrs_post_init__(self):
-        if self.value == -99999999:
-            self.value = None
-
-    def tominuit(self):
-        """
-        Returns a dictionnary of parameters for iminuit.
-        """
-        ret = {}
-        if self.value:
-            ret[self.name] = self.value
-            ret["fix_{0}".format(self.name)] = True
-        return ret
+    value = attr.ib(validator=check_poi)
 
     def __repr__(self):
         repr = "POI('{0}'".format(self.name)
@@ -232,6 +232,21 @@ class POI(Named):
             return "{0}, value={1})".format(repr, self.value)
         else:
             return repr + ")"
+
+    def __iter__(self):
+        if not hasattr(self.value, "__iter__"):
+            value = [self.value]
+        else:
+            value = self.value
+
+        for v in value:
+            yield POI(self.name, v)
+
+    def __len__(self):
+        if not hasattr(self.value, "__iter__"):
+            return 1
+        else:
+            return len(self.value)
 
 
 @attrs(repr=False, slots=True)

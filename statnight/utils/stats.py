@@ -44,3 +44,12 @@ def integrate1d(f, bound, nint, *args):
         ret = computeint(f, bound, nint, *args)
 
     return ret
+
+
+def compute_1D_NLL(minuit, poi, val, npoints=1):
+
+    range = (val, -1.)
+
+    nll_curve = minuit.mnprofile(poi, npoints, range)
+
+    return nll_curve[1]
