@@ -1,21 +1,20 @@
 from .hypotest import HypoTest
-import numpy as np
-from scipy.interpolate import interp1d
+from scipy.interpolate import InterpolatedUnivariateSpline
 import matplotlib.pyplot as plt
 from ..parameters import POI
+from ..calculators import AsymptoticCalculator, FrequentistCalculator
 
 
 class UpperLimit(HypoTest):
-    def __init__(self, null_hypothesis, alt_hypothesis, calculator,
+    def __init__(self, poinull, poialt, calculator,
                  qtilde=False, alpha=0.05, CLs=True):
 
-        super(UpperLimit, self).__init__(null_hypothesis, alt_hypothesis,
-                                         calculator)
+        super(UpperLimit, self).__init__(poinull, calculator, poialt)
 
-        self._scanvalues = None
         self._pvalues = {}
         self._alpha = alpha
         self._CLs = CLs
+        self._qtilde = qtilde
 
     @property
     def alpha(self):
@@ -34,16 +33,18 @@ class UpperLimit(HypoTest):
         self._CLs = CLs
 
     @property
-    def scanvalues(self):
-        return self._scanvalues
+    def qtilde(self):
+        """
+        Returns True if qtilde statistic is used, else False.
+        """
+        return self._qtilde
 
-    @scanvalues.setter
-    def scanvalues(self, iterable):
-        if not hasattr(iterable, "__iter__"):
-            raise TypeError("{0} not an iterable.".format(iterable))
-        else:
-            self._scanvalues = iterable
-            self._pvalues = {}
+    @qtilde.setter
+    def qtilde(self, qtilde):
+        """
+        Set True if qtilde statistic is used, else False.
+        """
+        self._qtilde = qtilde
 
     def pvalues(self):
         """
@@ -58,47 +59,24 @@ class UpperLimit(HypoTest):
 
     def _scannll(self):
 
-        althypo = self.alt_hypothesis
-        poialt = althypo.pois
+        pvaluef = self.calculator.pvalue
 
-        _shape = len(self.scanvalues)
-        poinull = self.scanvalues
+        pnull, palt = pvaluef(self.poinull, self.poialt, qtilde=self.qtilde,
+                              onesided=True)
 
-        p_values = {}
+        p_values = {"clsb": pnull, "clb": palt}
 
-        if self.qtilde:
-            nll_0_null = self.null_nll(0)
+        sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
 
-        nll_poia_null = self.null_nll(poialt)
+        exp_pvalf = self.calculator.expected_pvalue
 
-        poiname = self.null_hypothesis.pois.name
+        result = exp_pvalf(self.poinull, self.poialt, sigmas, self.CLs)
 
-        nll_poin_null = np.empty(_shape)
-        for i, poinull_ in np.ndenumerate(poinull):
-            nll_poin_null[i] = self.null_nll(POI(poiname, poinull_))
-
-        condition = poialt.value > self.scanvalues
-        qnull = np.where(condition, 0, 2*(nll_poin_null - nll_poia_null))
-
-        if self.qtilde:
-            condition = poialt.value < 0
-            q = 2*(nll_poin_null - nll_0_null)
-            qnull = np.where(condition, q, qnull)
-
-        pnull, palt = self.calculator.pvalue(qnull, poinull, althypo,
-                                             qtilde=self.qtilde,
-                                             onesided=True)
-
-        p_values["clsb"] = pnull
-        p_values["clb"] = palt
-
-        exp_pval = self.calculator.expected_pvalue
-
-        p_values["exp"] = exp_pval(poinull, poialt, 0, self.CLs)
-        p_values["exp_p1"] = exp_pval(poinull, poialt, 1, self.CLs)
-        p_values["exp_p2"] = exp_pval(poinull, poialt, 2, self.CLs)
-        p_values["exp_m1"] = exp_pval(poinull, poialt, -1, self.CLs)
-        p_values["exp_m2"] = exp_pval(poinull, poialt, -2, self.CLs)
+        p_values["exp"] = result[0]
+        p_values["exp_p1"] = result[1]
+        p_values["exp_p2"] = result[2]
+        p_values["exp_m1"] = result[3]
+        p_values["exp_m2"] = result[4]
 
         p_values["cls"] = p_values["clsb"] / p_values["clb"]
 
@@ -110,30 +88,52 @@ class UpperLimit(HypoTest):
         """
 
         pvalues = self.pvalues()
-        poivalues = self.scanvalues
-        poialt = self.alt_hypothesis.pois
-        poiname = poialt.name
+        poivalues = self.poinull.value
+        poiname = self.poinull.name
 
         if self.CLs:
             p_ = pvalues["cls"]
         else:
             p_ = pvalues["clsb"]
 
-        pois = interp1d(p_, poivalues, kind='cubic')
-        poiul = POI(poiname, float(pois(self.alpha)))
+        bestfitpoi = self.calculator.config.bestfit[poiname]
 
+        sel = poivalues > bestfitpoi
+        poivalues = poivalues[sel]
+        p_ = p_[sel] - self.alpha
+
+        s = InterpolatedUnivariateSpline(poivalues, p_)
+        val = s.roots()
+
+        if len(val) > 0:
+            poiul = val[0]
+        else:
+            raise NotImplementedError
+        poiul = POI(poiname, poiul)
+
+        sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
         exp_poi = self.calculator.expected_poi
 
+        if isinstance(self.calculator, AsymptoticCalculator):
+            kwargs = dict(poinull=poiul, poialt=self.poialt, nsigma=sigmas,
+                          alpha=self.alpha, CLs=self.CLs)
+        elif isinstance(self.calculator, FrequentistCalculator):
+            kwargs = dict(poinull=self.poinull, poialt=self.poialt,
+                          nsigma=sigmas, alpha=self.alpha, qtilde=self.qtilde,
+                          onesided=True, onesideddiscovery=False)
+
+        results = exp_poi(**kwargs)
+
         bands = {}
-        bands["median"] = exp_poi(poiul, poialt, 0.0, self.alpha, self.CLs)
-        bands["band_p1"] = exp_poi(poiul, poialt, 1.0, self.alpha, self.CLs)
-        bands["band_p2"] = exp_poi(poiul, poialt, 2.0, self.alpha, self.CLs)
-        bands["band_m1"] = exp_poi(poiul, poialt, -1.0, self.alpha, self.CLs)
-        bands["band_m2"] = exp_poi(poiul, poialt, -2.0, self.alpha, self.CLs)
+        bands["median"] = results[0]
+        bands["band_p1"] = results[1]
+        bands["band_p2"] = results[2]
+        bands["band_m1"] = results[3]
+        bands["band_m2"] = results[4]
 
         if printlevel > 0:
 
-            msg = "Observed upper limit: {0} = {1}"
+            msg = "\nObserved upper limit: {0} = {1}"
             print(msg.format(poiname, poiul.value))
             msg = "Expected upper limit: {0} = {1}"
             print(msg.format(poiname, bands["median"]))
@@ -162,7 +162,8 @@ class UpperLimit(HypoTest):
         """
 
         pvalues = self.pvalues()
-        scanvalues = self.scanvalues
+        poivalues = self.poinull.value
+        poiname = self.poinull.name
         alpha = self.alpha
 
         if ax is None:
@@ -175,30 +176,30 @@ class UpperLimit(HypoTest):
             cls_clr = "b"
             clsb_clr = "r"
 
-        ax.plot(scanvalues, pvalues["cls"], label="Observed CL$_{s}$",
+        ax.plot(poivalues, pvalues["cls"], label="Observed CL$_{s}$",
                 marker=".", color='k', markerfacecolor=cls_clr,
                 markeredgecolor=cls_clr, linewidth=2.0, ms=11)
-        ax.plot(scanvalues, pvalues["clsb"], label="Observed CL$_{s+b}$",
+        ax.plot(poivalues, pvalues["clsb"], label="Observed CL$_{s+b}$",
                 marker=".", color='k', markerfacecolor=clsb_clr,
                 markeredgecolor=clsb_clr, linewidth=2.0, ms=11,
                 linestyle=":")
-        ax.plot(scanvalues, pvalues["clb"], label="Observed CL$_{b}$",
+        ax.plot(poivalues, pvalues["clb"], label="Observed CL$_{b}$",
                 marker=".", color='k', markerfacecolor="k",
                 markeredgecolor="k", linewidth=2.0, ms=11)
-        ax.plot(scanvalues, pvalues["exp"],
+        ax.plot(poivalues, pvalues["exp"],
                 label="Expected CL$_{s}-$Median", color='k',
                 linestyle="--", linewidth=1.5, ms=10)
-        ax.plot([scanvalues[0], scanvalues[-1]], [alpha, alpha], color='r',
+        ax.plot([poivalues[0], poivalues[-1]], [alpha, alpha], color='r',
                 linestyle='-', linewidth=1.5)
-        ax.fill_between(scanvalues, pvalues["exp"], pvalues["exp_p1"],
+        ax.fill_between(poivalues, pvalues["exp"], pvalues["exp_p1"],
                         facecolor="lime",
                         label="Expected CL$_{s} \\pm 1 \\sigma$")
-        ax.fill_between(scanvalues, pvalues["exp"], pvalues["exp_m1"],
+        ax.fill_between(poivalues, pvalues["exp"], pvalues["exp_m1"],
                         facecolor="lime")
-        ax.fill_between(scanvalues, pvalues["exp_p1"], pvalues["exp_p2"],
+        ax.fill_between(poivalues, pvalues["exp_p1"], pvalues["exp_p2"],
                         facecolor="yellow",
                         label="Expected CL$_{s} \\pm 2 \\sigma$")
-        ax.fill_between(scanvalues, pvalues["exp_m1"], pvalues["exp_m2"],
+        ax.fill_between(poivalues, pvalues["exp_m1"], pvalues["exp_m2"],
                         facecolor="yellow")
 
         if self.CLs:
@@ -206,7 +207,7 @@ class UpperLimit(HypoTest):
         else:
             ax.set_ylim(-0.01, 0.55)
         ax.set_ylabel("p-value")
-        ax.set_xlabel(self.null_hypothesis.pois.name)
+        ax.set_xlabel(poiname)
         ax.legend(loc="best", fontsize=14)
 
         if show:

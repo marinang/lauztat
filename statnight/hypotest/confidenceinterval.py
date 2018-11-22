@@ -6,16 +6,14 @@ from ..parameters import POI
 
 
 class ConfidenceInterval(HypoTest):
-    def __init__(self, null_hypothesis, alt_hypothesis, calculator,
+    def __init__(self, poinull, poialt, calculator,
                  qtilde=False, alpha=0.32):
 
-        super(ConfidenceInterval, self).__init__(null_hypothesis,
-                                                 alt_hypothesis, calculator)
+        super(ConfidenceInterval, self).__init__(poinull, calculator, poialt)
 
         self._alpha = alpha
         self._pvalues = {}
-        self._scanvalues = None
-        self._bestfitpoi = None
+        self._qtilde = qtilde
 
     @property
     def alpha(self):
@@ -26,16 +24,18 @@ class ConfidenceInterval(HypoTest):
         self._alpha = alpha
 
     @property
-    def scanvalues(self):
-        return self._scanvalues
+    def qtilde(self):
+        """
+        Returns True if qtilde statistic is used, else False.
+        """
+        return self._qtilde
 
-    @scanvalues.setter
-    def scanvalues(self, iterable):
-        if not hasattr(iterable, "__iter__"):
-            raise TypeError("{0} not an iterable.".format(iterable))
-        else:
-            self._scanvalues = iterable
-            self._pvalues = {}
+    @qtilde.setter
+    def qtilde(self, qtilde):
+        """
+        Set True if qtilde statistic is used, else False.
+        """
+        self._qtilde = qtilde
 
     def pvalues(self):
         """
@@ -50,44 +50,28 @@ class ConfidenceInterval(HypoTest):
 
     def _scannll(self):
 
-        althypo = self.alt_hypothesis
-        poialt = althypo.pois
+        poinull = self.poinull
+        poialt = self.poialt
 
-        _shape = len(self.scanvalues)
-        poinull = self.scanvalues
-
-        p_values = {}
-
-        nll_poia_null = self.null_nll(poialt)
-
-        poiname = self.null_hypothesis.pois.name
-
-        nll_poin_null = np.empty(_shape)
-        for i, poinull_ in np.ndenumerate(poinull):
-            nll_poin_null[i] = self.null_nll(POI(poiname, poinull_))
-
-        qnull = 2*(nll_poin_null - nll_poia_null)
-
-        if self.qtilde:
-            nll_0_null = self.null_nll(0)
-            q = 2*(nll_poin_null - nll_0_null)
-            condition = poialt.value < 0
-            qnull = np.where(condition, q, qnull)
-
-        pnull, palt = self.calculator.pvalue(qnull, poinull, althypo,
+        pnull, palt = self.calculator.pvalue(poinull, poialt,
                                              qtilde=self.qtilde,
                                              onesided=False)
 
+        p_values = {}
         p_values["clsb"] = pnull
         p_values["clb"] = palt
 
-        exp_pval = self.calculator.expected_pvalue
+        sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
 
-        p_values["exp"] = exp_pval(poinull, poialt, 0, CLs=False)
-        p_values["exp_p1"] = exp_pval(poinull, poialt, 1, CLs=False)
-        p_values["exp_p2"] = exp_pval(poinull, poialt, 2, CLs=False)
-        p_values["exp_m1"] = exp_pval(poinull, poialt, -1, CLs=False)
-        p_values["exp_m2"] = exp_pval(poinull, poialt, -2, CLs=False)
+        exp_pvalf = self.calculator.expected_pvalue
+
+        result = exp_pvalf(self.poinull, self.poialt, sigmas, CLs=False)
+
+        p_values["exp"] = result[0]
+        p_values["exp_p1"] = result[1]
+        p_values["exp_p2"] = result[2]
+        p_values["exp_m1"] = result[3]
+        p_values["exp_m2"] = result[4]
 
         return p_values
 
@@ -97,9 +81,9 @@ class ConfidenceInterval(HypoTest):
         """
 
         pvalues = self.pvalues()
-        poivalues = self.scanvalues
-        poialt = self.alt_hypothesis.pois
-        poiname = poialt.name
+        poivalues = self.poinull.value
+        poialt = self.poialt
+        poiname = self.poinull.name
 
         p = pvalues["clsb"]
         pois = interp1d(p, poivalues, kind='cubic')
@@ -109,17 +93,13 @@ class ConfidenceInterval(HypoTest):
         poivalues_p = poivalues[poivalues > pois(max(p))]
         pois_m = interp1d(p_m, poivalues_m, kind='cubic')
         pois_p = interp1d(p_p, poivalues_p, kind='cubic')
-        poi_m = POI(poiname, float(pois_m(self.alpha)))
-        poi_p = POI(poiname, float(pois_p(self.alpha)))
-
-        #exp_poi = self.calculator.expected_poi
+        poi_m = float(pois_m(self.alpha))
+        poi_p = float(pois_p(self.alpha))
 
         bands = {}
         bands["observed"] = poialt.value
-        # bands["band_p"] = exp_poi(poi_p, poialt, 1.0, self.alpha, CLs=False)
-        # bands["band_m"] = exp_poi(poi_m, poialt, -1.0, self.alpha, CLs=False)
-        bands["band_p"] = poi_p.value
-        bands["band_m"] = poi_m.value
+        bands["band_p"] = poi_p
+        bands["band_m"] = poi_m
 
         if printlevel > 0:
 

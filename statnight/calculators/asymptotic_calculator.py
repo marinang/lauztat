@@ -2,13 +2,9 @@
 # !/usr/bin/python
 
 from .calculator import Calculator
-from iminuit import Minuit, describe
-import math
 from scipy.stats import norm
 import numpy as np
-from scipy.optimize import brentq
 from ..utils.stats import integrate1d
-from ..utils.wrappers import MinuitWrapper, LossFunctionWrapper
 from ..parameters import Constant, POI
 
 
@@ -21,184 +17,173 @@ class AsymptoticCalculator(Calculator):
     likelihood- based tests of new physics. Eur. Phys. J., C71:1–19, 2011
     """
 
-    def __init__(self):
+    def __init__(self, config):
         """
         __init__ function
         """
 
-        self._asy_nll = {}
-        self._alt_hypothesis = None
+        super(AsymptoticCalculator, self).__init__(config)
 
-    def asymov_dataset(self):
+        self._asymov_dataset = {}
+        self._asymov_minimizer = {}
+        self._asymov_nll = {}
 
-        if hasattr(self, "_asymov_dataset"):
-            return self._asymov_dataset
-        else:
-            hypo = self.alt_hypothesis
-            costfunc = hypo.costfunction
-            model = costfunc.model.copy()
-            data = costfunc.data
-            weights = costfunc.weights
-
-            poi = hypo.pois
+    def asymov_dataset(self, poi):
+        if poi not in self._asymov_dataset.keys():
+            model = self.config.model.copy()
             model.rm_vars(poi.name)
             model.add_vars(Constant(poi.name, poi.value))
 
-            if isinstance(costfunc, LossFunctionWrapper):
-                lossclass = type(costfunc.lossfunction)
-            else:
-                lossclass = type(costfunc)
-            lossbuilder = LossFunctionWrapper.from_lossfunction
+            data = self.config.data
+            weights = self.config.weights
 
-            alt_costfunc = lossbuilder(lossclass, model, data, weights)
+            loss = self.config.lossbuilder(model, data, weights)
 
-            minuit_alt = MinuitWrapper(alt_costfunc)
-            msg = "Get fit best values for nuisance parameters for the"
+            minimizer = self.config.minimizer(loss)
+
+            msg = "\nGet fit best values for nuisance parameters for the"
             msg += " alternative hypothesis!"
             print(msg)
-            minuit_alt.migrad()
+            minimizer.minimize()
+            values = minimizer.values
 
-            bounds = (min(data), max(data))
+            bounds = model.obs[0].range
 
-            self._asymov_dataset = generate_asymov_dataset(model,
-                                                           minuit_alt.values,
-                                                           bounds)
-            return self._asymov_dataset
+            model = self.config.model.copy()
+            asydataset = generate_asymov_dataset(model, values, bounds)
 
-    def asy_minuit(self):
-        if hasattr(self, "_asy_minuit"):
-            return self._asy_minuit
+            self._asymov_dataset[poi] = asydataset
+
+        return self._asymov_dataset[poi]
+
+    def asymov_minimizer(self, poi):
+        if poi not in self._asymov_minimizer.keys():
+            model = self.config.model.copy()
+
+            data = self.asymov_dataset(poi)[0]
+            weights = self.asymov_dataset(poi)[1]
+
+            loss = self.config.lossbuilder(model, data, weights)
+
+            self._asymov_minimizer[poi] = self.config.minimizer(loss)
+
+        return self._asymov_minimizer[poi]
+
+    def asymov_nll(self, poi, poialt):
+        ret = np.empty(len(poi))
+        for i, p in enumerate(poi):
+            if p not in self._asymov_nll.keys():
+                nll = self.asymov_minimizer(poialt).profile(p.name, p.value)
+                self._asymov_nll[p] = nll
+            ret[i] = self._asymov_nll[p]
+        return ret
+
+    def pvalue(self, poinull, poialt=None, qtilde=False, onesided=True,
+               onesideddiscovery=False):
+
+        poiname = poinull.name
+
+        bestfitpoi = POI(poiname, self.config.bestfit[poiname])
+
+        nll_poinull_obs = self.obs_nll(poinull)
+        nll_bestfitpoi_obs = self.obs_nll(bestfitpoi)
+        qobs = 2*(nll_poinull_obs - nll_bestfitpoi_obs)
+
+        if onesideddiscovery:
+            condition = (bestfitpoi.value < poinull.value) | (qobs < 0)
+            qobs = np.where(condition, 0, qobs)
+        elif onesided:
+            condition = (bestfitpoi.value > poinull.value) | (qobs < 0)
+            qobs = np.where(condition, 0, qobs)
+
+        sqrtqobs = np.sqrt(qobs)
+
+        needpalt = not(onesided and poialt is None)
+
+        if needpalt:
+            nll_poinull_asy = self.asymov_nll(poinull, poialt)
+            nll_poialt_asy = self.asymov_nll(poialt, poialt)
+            qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+            qalt = np.where(qalt < 0, 0, qalt)
+            sqrtqalt = np.sqrt(qalt)
         else:
-            hypo = self._alt_hypothesis
-            costfunc = hypo.costfunction
-            model = costfunc.model.copy()
-
-            data = self.asymov_dataset()[0]
-            weights = self.asymov_dataset()[1]
-
-            if isinstance(costfunc, LossFunctionWrapper):
-                lossclass = type(costfunc.lossfunction)
-            else:
-                lossclass = type(costfunc)
-            lossbuilder = LossFunctionWrapper.from_lossfunction
-
-            alt_costfunc = lossbuilder(lossclass, model, data, weights)
-
-            self._asy_minuit = MinuitWrapper(alt_costfunc)
-            return self._asy_minuit
-
-    def asy_nll(self, poi):
-
-        if poi.value not in self._asy_nll.keys():
-            self._asy_nll[poi.value] = compute_1D_NLL(self.asy_minuit(),
-                                                      poi.name, poi.value)
-
-        return self._asy_nll[poi.value]
-
-    def pvalue(self, qnull, poinull, alt_hypothesis, qtilde=False,
-               onesided=True, onesideddiscovery=False):
-
-        self._alt_hypothesis = alt_hypothesis
-        poialt = alt_hypothesis.pois
-        poiname = poialt.name
-
-        nll_poia_alt = self.asy_nll(poialt)
-
-        if isinstance(poinull, POI):
-            nll_poin_alt = self.asy_nll(poinull)
-        else:
-            nll_poin_alt = np.empty(qnull.shape)
-            for i, poinull_ in np.ndenumerate(poinull):
-                nll_poin_alt[i] = self.asy_nll(POI(poiname, poinull_))
-
-        qalt = 2*(nll_poin_alt - nll_poia_alt)
-
-        qalt = np.where(qalt < 0, 0.000001, qalt)
-
-        pnull = -1.
-        palt = -1.
-
-        sqrtqnull = np.sqrt(qnull)
-        sqrtqalt = np.sqrt(qalt)
+            palt = None
 
         if not qtilde:
             if onesided or onesideddiscovery:
-                pnull = 1. - norm.cdf(sqrtqnull)
-                palt = 1. - norm.cdf(sqrtqnull - sqrtqalt)
+                pnull = 1. - norm.cdf(sqrtqobs)
+                if needpalt:
+                    palt = 1. - norm.cdf(sqrtqobs - sqrtqalt)
             else:
-                pnull = (1. - norm.cdf(sqrtqnull))*2.
-                palt = 1. - norm.cdf(sqrtqnull + sqrtqalt)
-                palt += 1. - norm.cdf(sqrtqnull - sqrtqalt)
+                pnull = (1. - norm.cdf(sqrtqobs))*2.
+                if needpalt:
+                    palt = 1. - norm.cdf(sqrtqobs + sqrtqalt)
+                    palt += 1. - norm.cdf(sqrtqobs - sqrtqalt)
         else:
             if onesided:
-                if qnull > qalt and qalt > 0.:
-                    pnull = 1. - norm.cdf((qnull + qalt) / (2. * sqrtqalt))
-                    palt = 1. - norm.cdf((qnull - qalt) / (2. * sqrtqalt))
-                elif qnull <= qalt and qalt > 0.:
-                    pnull = 1. - norm.cdf(sqrtqnull)
-                    palt = 1. - norm.cdf(sqrtqnull - sqrtqalt)
+                pnull1 = 1. - norm.cdf((qobs + qalt) / (2. * sqrtqalt))
+                pnull2 = 1. - norm.cdf(sqrtqobs)
+                pnull = np.where(qobs > qalt, pnull1, pnull2)
+
+                if needpalt:
+                    palt1 = 1. - norm.cdf((qobs - qalt) / (2. * sqrtqalt))
+                    palt2 = 1. - norm.cdf(sqrtqobs - sqrtqalt)
+                    palt = np.where(qobs > qalt, palt1, palt2)
 
         return pnull, palt
 
     def expected_pvalue(self, poinull, poialt, nsigma, CLs=True):
 
-        poiname = poialt.name
-        nll_poin_alt = np.empty(poinull.shape)
-        for i, poinull_ in np.ndenumerate(poinull):
-            nll_poin_alt[i] = self.asy_nll(POI(poiname, poinull_))
+        nll_poinull_asy = self.asymov_nll(poinull, poialt)
+        nll_poialt_asy = self.asymov_nll(poialt, poialt)
 
-        nll_poia_alt = self.asy_nll(poialt)
+        qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+        qalt = np.where(qalt < 0, 0, qalt)
 
-        qalt = 2*(nll_poin_alt - nll_poia_alt)
+        ret = []
+        for ns in nsigma:
+            p_clsb = 1 - norm.cdf(np.sqrt(qalt) - ns)
+            if CLs:
+                p_clb = norm.cdf(ns)
+                p_cls = p_clsb / p_clb
+                ret.append(np.where(p_cls < 0, 0, p_cls))
+            else:
+                ret.append(np.where(p_clsb < 0, 0, p_clsb))
 
-        qalt = np.where(qalt < 0, 0.000001, qalt)
+        return ret
 
-        p_clsb = 1 - norm.cdf(np.sqrt(qalt) - nsigma)
-
-        if CLs:
-            p_clb = norm.cdf(nsigma)
-            p_cls = p_clsb / p_clb
-            return np.where(p_cls < 0, 0, p_cls)
-        else:
-            return np.where(p_clsb < 0, 0, p_clsb)
-
-    def expected_poi(self, poinull, poialt, n=0.0, alpha=0.05,
+    def expected_poi(self, poinull, poialt, nsigma, alpha=0.05,
                      CLs=False):
 
-        nll_poia_alt = self.asy_nll(poialt)
-        nll_poin_alt = self.asy_nll(poinull)
-        qalt = 2*(nll_poin_alt - nll_poia_alt)
+        nll_poinull_asy = self.asymov_nll(poinull, poialt)
+        nll_poialt_asy = self.asymov_nll(poialt, poialt)
 
-        sigma = math.sqrt((poinull.value - poialt.value)**2 / qalt)
+        qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+        qalt = np.where(qalt < 0, 0, qalt)
 
-        if CLs:
-            ret = poialt.value + sigma * (norm.ppf(1 - alpha*norm.cdf(n)) + n)
-        else:
-            ret = poialt.value + sigma * (norm.ppf(1 - alpha) + n)
+        sigma = np.sqrt((poinull.value - poialt.value)**2 / qalt)
+
+        ret = []
+        for ns in nsigma:
+            if CLs:
+                exp = poialt.value
+                exp += sigma * (norm.ppf(1 - alpha*norm.cdf(ns)) + ns)
+            else:
+                exp = poialt.value + sigma * (norm.ppf(1 - alpha) + ns)
+            ret.append(float(exp))
 
         return ret
 
 
-def compute_1D_NLL(minuit, poi, val, npoints=1):
-
-    range = (val, -1.)
-
-    nll_curve = minuit.mnprofile(poi, npoints, range)
-
-    return nll_curve[1]
-
-
-def generate_asymov_dataset(pdf, params_values, bounds, nbins=100):
+def generate_asymov_dataset(model, params, bounds, nbins=100):
 
     def bin_expectation_value(bin_low, bin_high):
 
-        params = list(describe(pdf))[1:]
         args = []
-        for p in params:
-            args.append(params_values[p])
+        for p in model.parameters[1:]:
+            args.append(params[p])
         args = tuple(args)
-
-        ret = integrate1d(pdf, (bin_low, bin_high), 100, *args)
+        ret = integrate1d(model, (bin_low, bin_high), 100, *args)
 
         return ret
 
