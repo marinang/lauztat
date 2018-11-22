@@ -6,6 +6,10 @@ import copy
 from probfit import gen_toy
 from scipy.stats import norm, poisson
 
+"""
+Wrappers for iminuit and pdf and loss function from probfit
+"""
+
 
 class func_code(object):
     def __init__(self, arg):
@@ -235,6 +239,14 @@ class ModelWrapper(object):
 
         return gen_toy(self.model, nsample, bound=self.obs[0].range, **kwargs)
 
+    def todict(self):
+        dict = {}
+        for o in self.obs:
+            dict[o.name] = o.todict()
+        for v in self.vars:
+            dict[v.name] = v.todict()
+        return dict
+
 
 class LossFunctionWrapper(object):
 
@@ -299,27 +311,6 @@ class LossFunctionWrapper(object):
         lossfunction = copy.deepcopy(self.lossfunction)
         return LossFunctionWrapper(lossfunction)
 
-    @classmethod
-    def from_lossfunction(cls, lossclass, model, data, weights=None):
-
-        initparam = describe(lossclass)
-
-        model_p = next(p for p in initparam if p in ["model", "pdf", "f"])
-
-        if weights is not None and len(weights) != len(data):
-            raise ValueError("Number of entries in the dataset should be\
-                             equal to the number of weights.")
-
-        kwargs = {model_p: model, "data": data, "weights": weights}
-
-        if model.extended and "extended" in initparam:
-            kwargs["extended"] = True
-
-        print(kwargs)
-
-        lossfunction = lossclass(**kwargs)
-        return LossFunctionWrapper(lossfunction)
-
 
 class MinimizerWrapper(object):
 
@@ -350,6 +341,8 @@ class MinimizerWrapper(object):
     def profile(self, param, value):
         range = (value, -1.)
         prof = self._minuit.mnprofile(param, 1, range)
+        if prof[1] > 0:
+            print("WARNING! Large positive value for EDM for ", value)
         return prof[1]
 
 

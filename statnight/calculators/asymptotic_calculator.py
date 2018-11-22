@@ -6,6 +6,7 @@ from scipy.stats import norm
 import numpy as np
 from ..utils.stats import integrate1d
 from ..parameters import Constant, POI
+from numba import jit
 
 
 class AsymptoticCalculator(Calculator):
@@ -83,18 +84,18 @@ class AsymptoticCalculator(Calculator):
 
         poiname = poinull.name
 
-        bestfitpoi = POI(poiname, self.config.bestfit[poiname])
+        bf = self.config.bestfit[poiname]
+        if qtilde and bf < 0:
+            bestfitpoi = POI(poiname, 0)
+        else:
+            bestfitpoi = POI(poiname, bf)
 
         nll_poinull_obs = self.obs_nll(poinull)
         nll_bestfitpoi_obs = self.obs_nll(bestfitpoi)
         qobs = 2*(nll_poinull_obs - nll_bestfitpoi_obs)
 
-        if onesideddiscovery:
-            condition = (bestfitpoi.value < poinull.value) | (qobs < 0)
-            qobs = np.where(condition, 0, qobs)
-        elif onesided:
-            condition = (bestfitpoi.value > poinull.value) | (qobs < 0)
-            qobs = np.where(condition, 0, qobs)
+        qobs = qdist(qobs, bestfitpoi.value, poinull.value, onesided,
+                     onesideddiscovery)
 
         sqrtqobs = np.sqrt(qobs)
 
@@ -104,7 +105,7 @@ class AsymptoticCalculator(Calculator):
             nll_poinull_asy = self.asymov_nll(poinull, poialt)
             nll_poialt_asy = self.asymov_nll(poialt, poialt)
             qalt = 2*(nll_poinull_asy - nll_poialt_asy)
-            qalt = np.where(qalt < 0, 0, qalt)
+            qalt = qdist(qalt, 0, poinull.value, onesided, onesideddiscovery)
             sqrtqalt = np.sqrt(qalt)
         else:
             palt = None
@@ -203,6 +204,20 @@ def generate_asymov_dataset(model, params, bounds, nbins=100):
         weight_asy[nb] = exp_val
 
     return data_asy, weight_asy
+
+
+@jit(nopython=True)
+def qdist(qdist, bestfit, poival, onesided=True, onesideddiscovery=False):
+    zeros = np.zeros(qdist.shape)
+    if onesideddiscovery:
+        condition = (bestfit < poival) | (qdist < 0)
+        q = np.where(condition, zeros, qdist)
+    elif onesided:
+        condition = (bestfit > poival) | (qdist < 0)
+        q = np.where(condition, zeros, qdist)
+    else:
+        q = qdist
+    return q
 
 # def Expected_Pvalues_2sided(pnull, palt):
 #
