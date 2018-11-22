@@ -110,6 +110,11 @@ class Observable(Named, Range):
             obs = Observable(name="x", range=(0,100))
     """
 
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.Observable"
+        return dict
+
     def __repr__(self):
         return "Observable('{0}', range={1})".format(self.name, self.range)
 
@@ -117,7 +122,7 @@ class Observable(Named, Range):
 @attrs(repr=False, slots=True)
 class Constant(Named):
     """
-    Class for constant paramaters:
+    Class for constant parameters:
 
         **Arguments:**
 
@@ -140,6 +145,11 @@ class Constant(Named):
         ret["fix_{0}".format(self.name)] = True
         return ret
 
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.Constant"
+        return dict
+
     def __repr__(self):
         return "Constant('{0}', value={1})".format(self.name, self.value)
 
@@ -147,7 +157,7 @@ class Constant(Named):
 @attrs(repr=False, slots=True)
 class Variable(Named, Range):
     """
-    Class for variable paramaters.
+    Class for variable parameters.
 
         **Arguments:**
 
@@ -194,6 +204,11 @@ class Variable(Named, Range):
         rep = "Variable('{0}', initvalue={1}, range={2}, initstep={3})"
         rep = rep.format(self.name, self.initvalue, self.range, self.initstep)
         return rep
+
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.Variable"
+        return dict
 
 
 def check_poi(instance=None, poivalue=None, value=None):
@@ -252,7 +267,7 @@ class POI(Named):
 @attrs(repr=False, slots=True)
 class GaussianConstrained(Named, Range):
     """
-    Class for gaussian constrained paramaters.
+    Class for gaussian constrained parameters.
 
         **Arguments:**
 
@@ -287,6 +302,11 @@ class GaussianConstrained(Named, Range):
         ret["limit_{0}".format(self.name)] = self.range
         ret["error_{0}".format(self.name)] = self.initstep
         return ret
+
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.GaussianConstrained"
+        return dict
 
     def evalconstraint(self, param):
         return gaussian(param, self.mu, self.sigma)

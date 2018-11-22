@@ -13,8 +13,8 @@ class Calculator(object):
     def obs_nll(self, poi):
         ret = np.empty(len(poi))
         for i, p in enumerate(poi):
-            if p.value not in self._obs_nll.keys():
+            if p not in self._obs_nll.keys():
                 nll = self.obsminimizer.profile(p.name, p.value)
-                self._obs_nll[p.value] = nll
-            ret[i] = self._obs_nll[p.value]
+                self._obs_nll[p] = nll
+            ret[i] = self._obs_nll[p]
         return ret
