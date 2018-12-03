@@ -12,7 +12,7 @@ Pure python statistics tools for high energy physics.
     :alt: Coveralls github
     :target: https://coveralls.io/github/marinang/statnight?branch=master
 
-WIP! Waiting for standard API in HEP! See discussions at `PyHEP gitter channel <https://gitter.im/HSF/PyHEP>`.
+WIP! Waiting for standard API in HEP! See discussions at `PyHEP gitter channel <https://gitter.im/HSF/PyHEP>`_.
 
 dependencies:
 =============
