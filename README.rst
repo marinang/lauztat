@@ -12,12 +12,13 @@ Pure python statistics tools for high energy physics, based on iminuit.
     :alt: Coveralls github
     :target: https://coveralls.io/github/marinang/statnight?branch=master
 
+WIP! Waiting for standard API in HEP! See discussions at `PyHEP gitter channel <https://gitter.im/HSF/PyHEP#utm_source=notification&utm_medium=email&utm_campaign=unread-notifications>`
+
 dependencies:
 =============
 
 - `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.4+)
 - `Numpy <https://scipy.org/install.html>`__
-- `iminuit <https://github.com/scikit-hep/iminuit>`__
 - `matplotlib <https://matplotlib.org/users/installing.html>`__ (optionnal)
 
 examples:
