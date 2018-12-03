@@ -2,14 +2,11 @@
 # !/usr/bin/python
 
 from .calculator import Calculator
-import iminuit
-import math
 from scipy.stats import norm
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import interp1d
-from scipy.optimize import brentq
 from ..utils.stats import integrate1d
+from ..parameters import Constant, POI
+from numba import jit
 
 
 class AsymptoticCalculator(Calculator):
@@ -19,526 +16,175 @@ class AsymptoticCalculator(Calculator):
 
     See G. Cowan, K. Cranmer, E. Gross and O. Vitells: Asymptotic formulae for
     likelihood- based tests of new physics. Eur. Phys. J., C71:1–19, 2011
-
-    **Arguments:**
-
-        - **null_hypothesis** a statnight.model.Hypothesis representing the \
-        null hypothesis of the test.
-        - **null_hypothesis** a statnight.model.Hypothesis representing the \
-        alterrnative hypothesis of the test.
-        - **data** a numpy array. The data on which the hypothesis is tested.
-        - **qtilde** bool (optionnal). Set the test statistic to qtilde \
-        default **False**.
-        - **onesided** bool (optionnal). Set the test statistic for one sided \
-        upper limit. default **True**.
-        - **onesideddiscovery** bool (optionnal). Set the test statistic for \
-        one sided discovery. default **False**.
-        - **CLs** bool (optionnal). Use CLs for computing upper limit. \
-        default **True**.
     """
 
-    def __init__(self, null_hypothesis, alt_hypothesis, data, qtilde=False,
-                 onesided=True, onesideddiscovery=False, CLs=True):
+    def __init__(self, config):
         """
         __init__ function
         """
 
-        super(AsymptoticCalculator, self).__init__(null_hypothesis,
-                                                   alt_hypothesis, data)
+        super(AsymptoticCalculator, self).__init__(config)
 
-        if len(null_hypothesis.pois) > 1 or len(alt_hypothesis.pois) > 1:
-            raise ValueError("Asymptotic calculator valid only for one \
-                             paramater of interest.")
+        self._asymov_dataset = {}
+        self._asymov_minimizer = {}
+        self._asymov_nll = {}
 
-        elif len(null_hypothesis.pois) == 1 and len(alt_hypothesis.pois) == 0:
-            null_poi_name = null_hypothesis.poinames[0]
-            msg = "{0} = 0 assumed for the alternative hypothesis."
-            print(msg.format(null_poi_name))
-            self._poi = null_hypothesis.getpoi(null_poi_name)
-            self._poi_null_val = self.null_hypothesis.poivalues[null_poi_name]
-            self._poi_alt_val = 0.
+    def asymov_dataset(self, poi):
+        if poi not in self._asymov_dataset.keys():
+            model = self.config.model.copy()
+            model.rm_vars(poi.name)
+            model.add_vars(Constant(poi.name, poi.value))
 
-        elif len(null_hypothesis.pois) == 0 and len(alt_hypothesis.pois) == 1:
-            alt_poi_name = alt_hypothesis.poinames[0]
-            msg = "{0} = 0 assumed for the null hypothesis."
-            print(msg.format(alt_poi_name))
-            self._poi = alt_hypothesis.getpoi(alt_poi_name)
-            self._poi_null_val = 0.
-            self._poi_alt_val = self.alt_hypothesis.poivalues[alt_poi_name]
+            data = self.config.data
+            weights = self.config.weights
 
-        else:
-            null_poi_name = null_hypothesis.poinames[0]
-            alt_poi_name = alt_hypothesis.poinames[0]
+            loss = self.config.lossbuilder(model, data, weights)
 
-            if null_poi_name != alt_poi_name:
-                raise ValueError("Different names for parameters of interest \
-                                 in null and alternative hypothesis.")
+            minimizer = self.config.minimizer(loss)
 
-            poi_name = null_hypothesis.poinames[0]
-            self._poi = null_hypothesis.model[alt_poi_name]
-            self._poi_null_val = self.null_hypothesis.poivalues[poi_name]
-            self._poi_alt_val = self.alt_hypothesis.poivalues[poi_name]
-
-        self._qtilde = qtilde
-        self._onesided = onesided
-        self._onesideddiscovery = onesideddiscovery
-        self._CLs = CLs
-        self._null_nll = {}
-        self._asy_nll = {}
-
-    @property
-    def qtilde(self):
-        """
-        Returrns True if qtilde test statistic is used, False if not.
-        """
-        return self._qtilde
-
-    @qtilde.setter
-    def qtilde(self, qtilde):
-        if not isinstance(qtilde, bool):
-            msg = "qtilde must set to True/False, not {0}."
-            raise ValueError(msg.format(qtilde))
-        self._qtilde = qtilde
-
-    @property
-    def onesided(self):
-        """
-        Returrns True if a one sided test statistic is used, False if not.
-        """
-        return self._onesided
-
-    @onesided.setter
-    def onesided(self, onesided):
-        if not isinstance(onesided, bool):
-            msg = "onesided must set to True/False, not {0}."
-            raise ValueError(msg.format(onesided))
-        self._onesided = onesided
-
-    @property
-    def onesideddiscovery(self):
-        """
-        Returrns True if a one sided test statistic for discovery is used,
-        False if not.
-        """
-        return self._onesideddiscovery
-
-    @onesideddiscovery.setter
-    def onesideddiscovery(self, onesideddiscovery):
-        if not isinstance(onesideddiscovery, bool):
-            msg = "onesideddiscovery must set to True/False, not {0}."
-            raise ValueError(msg.format(onesideddiscovery))
-        self._onesideddiscovery = onesideddiscovery
-
-    @property
-    def CLs(self):
-        """
-        Returrns True if CLs is used, False if not.
-        """
-        return self._CLs
-
-    @CLs.setter
-    def CLs(self, CLs):
-        if not isinstance(CLs, bool):
-            msg = "CLs must set to True/False, not {0}."
-            raise ValueError(msg.format(CLs))
-        self._CLs = CLs
-
-    def null_minuit(self):
-        if hasattr(self, "_null_minuit"):
-            return self._null_minuit
-        else:
-            if self._poi.name in self.null_hypothesis.poinames:
-                hypo = self.null_hypothesis
-            elif self._poi.name in self.alt_hypothesis.poinames:
-                hypo = self.alt_hypothesis
-
-            lh = hypo.model.nll_function(self.data, weights=None)
-
-            params = {}
-
-            for v in hypo.model.variables:
-                pars = v.tominuit()
-                params.update(pars)
-
-            self._null_minuit = iminuit.Minuit(lh, pedantic=True, errordef=0.5,
-                                               **params)
-            return self._null_minuit
-
-    def asy_minuit(self):
-        if hasattr(self, "_asy_minuit"):
-            return self._asy_minuit
-        else:
-            if self._poi.name in self.null_hypothesis.poinames:
-                hypo = self.null_hypothesis
-            elif self._poi.name in self.alt_hypothesis.poinames:
-                hypo = self.alt_hypothesis
-
-            data = self.asymov_dataset()[0]
-            weights = self.asymov_dataset()[1]
-
-            asy_likelihood = hypo.model.nll_function(data, weights=weights)
-            self._asy_likelihood = asy_likelihood
-
-            params = {}
-
-            for v in hypo.model.variables:
-                pars = v.tominuit()
-                params.update(pars)
-
-            self._asy_minuit = iminuit.Minuit(asy_likelihood, pedantic=False,
-                                              errordef=0.5, **params)
-            return self._asy_minuit
-
-    @property
-    def bestfitpoi(self):
-        """
-        Returns the best fit value of the parameter of interest.
-        """
-        if hasattr(self, "_best_fit_poi"):
-            return self._best_fit_poi
-        else:
-            print("Get fit best value for parameter interest!")
-
-            self.null_minuit().migrad()
-            values = self.null_minuit().values
-            self._best_fit_poi = values[self._poi.name]
-
-            return self._best_fit_poi
-
-    @bestfitpoi.setter
-    def bestfitpoi(self, value):
-        """
-        Set the best fit value of the parameter of interest for external fit.
-        """
-        self._best_fit_poi = value
-
-    def asymov_dataset(self):
-
-        if hasattr(self, "_asymov_dataset"):
-            return self._asymov_dataset
-        else:
-            alt_LH = self.alt_hypothesis.model.nll_function(self.data,
-                                                            weights=None)
-            params = {}
-
-            for v in self.alt_hypothesis.model.variables:
-                pars = v.tominuit()
-                params.update(pars)
-                if v.name == self._poi.name:
-                    params["fix_{0}".format(self._poi.name)] = True
-                    poiv = self._poi_alt_val
-                    params["{0}".format(self._poi.name)] = poiv
-
-            minuit_alt = iminuit.Minuit(alt_LH, pedantic=False, errordef=0.5,
-                                        **params)
-            msg = "Get fit best values for nuisance parameters for alternative"
-            msg += " hypothesis!"
+            msg = "\nGet fit best values for nuisance parameters for the"
+            msg += " alternative hypothesis!"
             print(msg)
-            minuit_alt.migrad()
+            minimizer.minimize()
+            values = minimizer.values
 
-            pdf_alt = self.alt_hypothesis.model.pdf
-            bounds = self.alt_hypothesis.model.obs[0].range
+            bounds = model.obs[0].range
 
-            self._asymov_dataset = generate_asymov_dataset(pdf_alt,
-                                                           minuit_alt.values,
-                                                           bounds)
-            return self._asymov_dataset
+            model = self.config.model.copy()
+            asydataset = generate_asymov_dataset(model, values, bounds)
 
-    def null_nll(self, poi_val):
+            self._asymov_dataset[poi] = asydataset
 
-        if poi_val not in self._null_nll.keys():
-            self._null_nll[poi_val] = compute_NLL(self.null_minuit(),
-                                                  self._poi.name, poi_val)
+        return self._asymov_dataset[poi]
 
-            return self._null_nll[poi_val]
+    def asymov_minimizer(self, poi):
+        if poi not in self._asymov_minimizer.keys():
+            model = self.config.model.copy()
 
-    def asymov_nll(self, poi_val):
+            data = self.asymov_dataset(poi)[0]
+            weights = self.asymov_dataset(poi)[1]
 
-        if poi_val not in self._asy_nll.keys():
-            self._asy_nll[poi_val] = compute_NLL(self.asy_minuit(),
-                                                 self._poi.name, poi_val)
+            loss = self.config.lossbuilder(model, data, weights)
 
-        return self._asy_nll[poi_val]
+            self._asymov_minimizer[poi] = self.config.minimizer(loss)
 
-    def alt_nll(self, poi_value):
-        return self.asymov_nll(poi_value)
+        return self._asymov_minimizer[poi]
 
-    def _scan_nll(self):
+    def asymov_nll(self, poi, poialt):
+        ret = np.empty(len(poi))
+        for i, p in enumerate(poi):
+            if p not in self._asymov_nll.keys():
+                nll = self.asymov_minimizer(poialt).profile(p.name, p.value)
+                self._asymov_nll[p] = nll
+            ret[i] = self._asymov_nll[p]
+        return ret
 
-        poi_values = self._poi_null_val
-        poi_alt = self._poi_alt_val
+    def pvalue(self, poinull, poialt=None, qtilde=False, onesided=True,
+               onesideddiscovery=False):
 
-        hasiter = hasattr(poi_values, "__iter__")
-        isnumber = isinstance(poi_values, (int, float))
+        poiname = poinull.name
 
-        if not hasiter and isnumber:
-            _shape = 1
+        bf = self.config.bestfit[poiname]
+        if qtilde and bf < 0:
+            bestfitpoi = POI(poiname, 0)
         else:
-            _shape = len(poi_values)
+            bestfitpoi = POI(poiname, bf)
 
-        p_values = {
-                    "clsb":   np.zeros(_shape),
-                    "clb":    np.zeros(_shape),
-                    "exp":    np.zeros(_shape),
-                    "exp_p1": np.zeros(_shape),
-                    "exp_p2": np.zeros(_shape),
-                    "exp_m1": np.zeros(_shape),
-                    "exp_m2": np.zeros(_shape)
-                    }
+        nll_poinull_obs = self.obs_nll(poinull)
+        nll_bestfitpoi_obs = self.obs_nll(bestfitpoi)
+        qobs = 2*(nll_poinull_obs - nll_bestfitpoi_obs)
 
-        if self.qtilde:
-            nll_0_null = self.null_nll(0)
+        qobs = qdist(qobs, bestfitpoi.value, poinull.value, onesided,
+                     onesideddiscovery)
 
-        if not self.onesideddiscovery:
-            bestpoi = self.bestfitpoi
-            nll_poiv_null = self.null_nll(bestpoi)
+        sqrtqobs = np.sqrt(qobs)
+
+        needpalt = not(onesided and poialt is None)
+
+        if needpalt:
+            nll_poinull_asy = self.asymov_nll(poinull, poialt)
+            nll_poialt_asy = self.asymov_nll(poialt, poialt)
+            qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+            qalt = qdist(qalt, 0, poinull.value, onesided, onesideddiscovery)
+            sqrtqalt = np.sqrt(qalt)
         else:
-            nll_poiv_null = self.null_nll(poi_alt)
+            palt = None
 
-        nll_poiv_alt = self.alt_nll(poi_alt)
-
-        for i, pv in np.ndenumerate(poi_values):
-
-            nll_pv_null = self.null_nll(pv)
-            nll_pv_alt = self.alt_nll(pv)
-
-            if self.onesided and poi_alt > pv:
-                qnull = 0
-            elif self.onesideddiscovery and poi_alt < pv:
-                qnull = 0
-            elif poi_alt < 0 and self.qtilde:
-                qnull = 2*(nll_pv_null - nll_0_null)
+        if not qtilde:
+            if onesided or onesideddiscovery:
+                pnull = 1. - norm.cdf(sqrtqobs)
+                if needpalt:
+                    palt = 1. - norm.cdf(sqrtqobs - sqrtqalt)
             else:
-                qnull = 2*(nll_pv_null - nll_poiv_null)
+                pnull = (1. - norm.cdf(sqrtqobs))*2.
+                if needpalt:
+                    palt = 1. - norm.cdf(sqrtqobs + sqrtqalt)
+                    palt += 1. - norm.cdf(sqrtqobs - sqrtqalt)
+        else:
+            if onesided:
+                pnull1 = 1. - norm.cdf((qobs + qalt) / (2. * sqrtqalt))
+                pnull2 = 1. - norm.cdf(sqrtqobs)
+                pnull = np.where(qobs > qalt, pnull1, pnull2)
 
-            qalt = 2*(nll_pv_alt - nll_poiv_alt)
+                if needpalt:
+                    palt1 = 1. - norm.cdf((qobs - qalt) / (2. * sqrtqalt))
+                    palt2 = 1. - norm.cdf(sqrtqobs - sqrtqalt)
+                    palt = np.where(qobs > qalt, palt1, palt2)
 
-            if qalt < 0:
-                qalt = 0.0000001
+        return pnull, palt
 
-            pnull, palt = Pvalues(qnull, qalt, self.qtilde, self.onesided,
-                                  self.onesideddiscovery)
+    def expected_pvalue(self, poinull, poialt, nsigma, CLs=True):
 
-            p_values["clsb"][i] = pnull
-            p_values["clb"][i] = palt
+        nll_poinull_asy = self.asymov_nll(poinull, poialt)
+        nll_poialt_asy = self.asymov_nll(poialt, poialt)
 
-            if self.onesided or self.onesideddiscovery:
-                p_values["exp"][i] = Expected_Pvalue(qalt, 0, self.CLs)
-                p_values["exp_p1"][i] = Expected_Pvalue(qalt, 1, self.CLs)
-                p_values["exp_p2"][i] = Expected_Pvalue(qalt, 2, self.CLs)
-                p_values["exp_m1"][i] = Expected_Pvalue(qalt, -1, self.CLs)
-                p_values["exp_m2"][i] = Expected_Pvalue(qalt, -2, self.CLs)
+        qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+        qalt = np.where(qalt < 0, 0, qalt)
+
+        ret = []
+        for ns in nsigma:
+            p_clsb = 1 - norm.cdf(np.sqrt(qalt) - ns)
+            if CLs:
+                p_clb = norm.cdf(ns)
+                p_cls = p_clsb / p_clb
+                ret.append(np.where(p_cls < 0, 0, p_cls))
             else:
-                pvalues_2sided = Expected_Pvalues_2sided(pnull, palt)
-                p_values["exp"][i] = pvalues_2sided[0]
-                p_values["exp_p1"][i] = pvalues_2sided[1]
-                p_values["exp_p2"][i] = pvalues_2sided[2]
-                p_values["exp_m1"][i] = pvalues_2sided[3]
-                p_values["exp_m2"][i] = pvalues_2sided[4]
-
-            p_values["cls"] = p_values["clsb"] / p_values["clb"]
-
-        return p_values
-
-    def pvalues(self):
-        """
-        Returns p-values scanned for the values of the parameters of interest
-        in the null hypothesis.
-        """
-        if hasattr(self, "_p_values"):
-            return self._p_values
-        else:
-            self._p_values = self._scan_nll()
-            return self._p_values
-
-    def upperlimit(self, alpha=0.05, printlevel=1):
-        """
-        Returns the upper limit of the parameter of interest.
-
-            **Arguments:**
-                - **alpha** (optionnal) confidence level. default **0.05**
-        """
-
-        poi_name = self._poi.name
-        p_values = self.pvalues()
-        poi_values = self._poi_null_val
-        poi_alt = self._poi_alt_val
-
-        if self.CLs:
-            p_ = p_values["cls"]
-        else:
-            p_ = p_values["clsb"]
-
-        if not (self.onesided or self.onesideddiscovery):
-            pois1 = interp1d(p_, poi_values, kind='cubic')
-            poi_values_ = poi_values[poi_values > pois1(max(p_))]
-            p_ = p_[poi_values > pois1(max(p_))]
-            pois2 = interp1d(p_, poi_values_, kind='cubic')
-            poi_ul = float(pois2(alpha))
-        else:
-            pois = interp1d(p_, poi_values, kind='cubic')
-            poi_ul = float(pois(alpha))
-
-        nll_0_alt = compute_NLL(self._asy_minuit, poi_name, poi_alt)
-        nll_ul_alt = compute_NLL(self._asy_minuit, poi_name, poi_ul)
-        qalt = 2*(nll_ul_alt - nll_0_alt)
-
-        sigma = math.sqrt((poi_ul - poi_alt)**2 / qalt)
-
-        bands = {}
-        bands["median"] = Expected_POI(poi_alt, sigma,  0.0, alpha, self.CLs)
-        bands["band_p1"] = Expected_POI(poi_alt, sigma,  1.0, alpha, self.CLs)
-        bands["band_p2"] = Expected_POI(poi_alt, sigma,  2.0, alpha, self.CLs)
-        bands["band_m1"] = Expected_POI(poi_alt, sigma, -1.0, alpha, self.CLs)
-        bands["band_m2"] = Expected_POI(poi_alt, sigma, -2.0, alpha, self.CLs)
-
-        if printlevel > 0:
-
-            msg = "Observed upper limit: {0} = {1}"
-            print(msg.format(poi_name, poi_ul))
-            msg = "Expected upper limit: {0} = {1}"
-            print(msg.format(poi_name, bands["median"]))
-            msg = "Expected upper limit +1 sigma: {0} = {1}"
-            print(msg.format(poi_name, bands["band_p1"]))
-            msg = "Expected upper limit -1 sigma: {0} = {1}"
-            print(msg.format(poi_name, bands["band_m1"]))
-            msg = "Expected upper limit +2 sigma: {0} = {1}"
-            print(msg.format(poi_name, bands["band_p2"]))
-            msg = "Expected upper limit -2 sigma: {0} = {1}"
-            print(msg.format(poi_name, bands["band_m2"]))
-
-        bands["observed"] = poi_ul
-
-        return bands
-
-    def result(self, alpha=0.05, printlevel=1):
-        """
-        Returns the result of the hypothesis test.
-
-            **Arguments:**
-                - **alpha** confidence level. default **0.05**
-        """
-
-        poi_alt = self._poi_alt_val
-
-        nll_0_null = self.null_nll(0)
-        nll_0_alt = self.alt_nll(0)
-
-        if not self.onesideddiscovery:
-            bestpoi = self.bestfitpoi
-            nll_poiv_null = self.null_nll(bestpoi)
-        else:
-            nll_poiv_null = self.null_nll(poi_alt)
-
-        nll_poiv_alt = self.alt_nll(poi_alt)
-
-        qnull = 2*(nll_0_null - nll_poiv_null)
-        qalt = 2*(nll_0_alt - nll_poiv_alt)
-
-        pnull, palt = Pvalues(qnull, qalt, self.qtilde, self.onesided,
-                              self.onesideddiscovery)
-
-        clsb = palt
-        clb = pnull
-        cls = clsb / clb
-        if self.onesided or self.onesided:
-            Z = norm.ppf(1. - pnull)
-        else:
-            Z = norm.ppf(1. - pnull/2.)
-
-        if printlevel > 0:
-            print("p_value for the Null hypothesis = {0}".format(pnull))
-            print("Significance = {0}".format(Z))
-            print("CL_b = {0}".format(clb))
-            print("CL_s+b = {0}".format(clsb))
-            print("CL_s = {0}".format(cls))
-
-        ret = {
-               "pnull": pnull,
-               "significance": Z,
-               "clb": clb,
-               "clsb": clsb,
-               "cls": cls
-               }
+                ret.append(np.where(p_clsb < 0, 0, p_clsb))
 
         return ret
 
-    def plot(self, alpha=0.05, ax=None, show=True, **kwargs):
-        """
-        Plot the pvalues obtained with CLsb/CLb/CLs, and using the asimov
-        datasets (median p_value, +bands), scanned for the different values of
-        the parameter of interest.
+    def expected_poi(self, poinull, poialt, nsigma, alpha=0.05,
+                     CLs=False):
 
-            **Arguments:**
-                - **alpha** (optionnal) confidence level. default **0.05**
-                - **ax** (optionnal) matplotlib axis
-                - **show** (optionnal) show the plot. default **True**.
-        """
+        nll_poinull_asy = self.asymov_nll(poinull, poialt)
+        nll_poialt_asy = self.asymov_nll(poialt, poialt)
 
-        p_values = self.pvalues()
-        poi_values = self._poi_null_val
+        qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+        qalt = np.where(qalt < 0, 0, qalt)
 
-        if ax is None:
-            fig, ax = plt.subplots(figsize=(10, 8))
+        sigma = np.sqrt((poinull.value - poialt.value)**2 / qalt)
 
-        if self.CLs:
-            cls_clr = "r"
-            clsb_clr = "b"
-        else:
-            cls_clr = "b"
-            clsb_clr = "r"
+        ret = []
+        for ns in nsigma:
+            if CLs:
+                exp = poialt.value
+                exp += sigma * (norm.ppf(1 - alpha*norm.cdf(ns)) + ns)
+            else:
+                exp = poialt.value + sigma * (norm.ppf(1 - alpha) + ns)
+            ret.append(float(exp))
 
-        ax.plot(poi_values, p_values["cls"], label="Observed CL$_{s}$",
-                marker=".", color='k', markerfacecolor=cls_clr,
-                markeredgecolor=cls_clr, linewidth=2.0, ms=11)
-        ax.plot(poi_values, p_values["clsb"], label="Observed CL$_{s+b}$",
-                marker=".", color='k', markerfacecolor=clsb_clr,
-                markeredgecolor=clsb_clr, linewidth=2.0, ms=11,
-                linestyle=":")
-        ax.plot(poi_values, p_values["clb"], label="Observed CL$_{b}$",
-                marker=".", color='k', markerfacecolor="k",
-                markeredgecolor="k", linewidth=2.0, ms=11)
-        ax.plot(poi_values, p_values["exp"],
-                label="Expected CL$_{s}-$Median", color='k',
-                linestyle="--", linewidth=1.5, ms=10)
-        ax.plot([poi_values[0], poi_values[-1]], [alpha, alpha], color='r',
-                linestyle='-', linewidth=1.5)
-        ax.fill_between(poi_values, p_values["exp"], p_values["exp_p1"],
-                        facecolor="lime",
-                        label="Expected CL$_{s} \\pm 1 \\sigma$")
-        ax.fill_between(poi_values, p_values["exp"], p_values["exp_m1"],
-                        facecolor="lime")
-        ax.fill_between(poi_values, p_values["exp_p1"], p_values["exp_p2"],
-                        facecolor="yellow",
-                        label="Expected CL$_{s} \\pm 2 \\sigma$")
-        ax.fill_between(poi_values, p_values["exp_m1"], p_values["exp_m2"],
-                        facecolor="yellow")
-
-        if self.CLs:
-            ax.set_ylim(-0.01, 1.1)
-        else:
-            ax.set_ylim(-0.01, 0.55)
-        ax.set_ylabel("p-value")
-        ax.set_xlabel(self._poi.name)
-        ax.legend(loc="best", fontsize=14)
-
-        if show:
-            plt.show()
-
-# Utilities
+        return ret
 
 
-def generate_asymov_dataset(pdf, params_values, bounds, nbins=100):
+def generate_asymov_dataset(model, params, bounds, nbins=100):
 
     def bin_expectation_value(bin_low, bin_high):
 
-        params = list(iminuit.describe(pdf))[1:]
         args = []
-        for p in params:
-            args.append(params_values[p])
+        for p in model.parameters[1:]:
+            args.append(params[p])
         args = tuple(args)
-
-        ret = integrate1d(pdf, (bin_low, bin_high), 100, *args)
+        ret = integrate1d(model, (bin_low, bin_high), 100, *args)
 
         return ret
 
@@ -560,95 +206,52 @@ def generate_asymov_dataset(pdf, params_values, bounds, nbins=100):
     return data_asy, weight_asy
 
 
-def compute_NLL(minuit, poi, val, npoints=1):
-
-    range = (val, -1.)
-
-    nll_curve = minuit.mnprofile(poi, npoints, range)
-
-    return nll_curve[1]
-
-
-def Pvalues(qnull, qalt, qtilde=False, onesided=True, onesideddiscovery=False):
-
-    pnull = -1.
-    palt = -1.
-
-    if not qtilde:
-        if onesided or onesideddiscovery:
-            pnull = 1. - norm.cdf(math.sqrt(qnull))
-            palt = 1. - norm.cdf(math.sqrt(qnull) - math.sqrt(qalt))
-        else:
-            pnull = (1. - norm.cdf(math.sqrt(qnull)))*2.
-            palt = 1. - norm.cdf(math.sqrt(qnull) + math.sqrt(qalt))
-            palt += 1. - norm.cdf(math.sqrt(qnull) - math.sqrt(qalt))
+@jit(nopython=True)
+def qdist(qdist, bestfit, poival, onesided=True, onesideddiscovery=False):
+    zeros = np.zeros(qdist.shape)
+    if onesideddiscovery:
+        condition = (bestfit < poival) | (qdist < 0)
+        q = np.where(condition, zeros, qdist)
+    elif onesided:
+        condition = (bestfit > poival) | (qdist < 0)
+        q = np.where(condition, zeros, qdist)
     else:
-        if onesided:
-            if qnull > qalt and qalt > 0.:
-                pnull = 1. - norm.cdf((qnull + qalt) / (2. * math.sqrt(qalt)))
-                palt = 1. - norm.cdf((qnull - qalt) / (2. * math.sqrt(qalt)))
-            elif qnull <= qalt and qalt > 0.:
-                pnull = 1. - norm.cdf(math.sqrt(qnull))
-                palt = 1. - norm.cdf(math.sqrt(qnull) - math.sqrt(qalt))
+        q = qdist
+    return q
 
-    return pnull, palt
-
-
-def Expected_Pvalue(qalt, nsigma, CLs=True):
-
-    p_clsb = 1 - norm.cdf(math.sqrt(qalt) - nsigma)
-
-    if CLs:
-        p_clb = norm.cdf(nsigma)
-        p_cls = p_clsb / p_clb
-        return max(p_cls, 0.)
-    else:
-        return max(p_clsb, 0.)
-
-
-def Expected_Pvalues_2sided(pnull, palt):
-
-    sqrtqnull = norm.ppf(1 - pnull/2)
-
-    def paltfunct(offset, pval, icase):
-        def func(x):
-            ret = 1. - norm.cdf(x + offset)
-            ret += 1. - norm.cdf(icase*(x - offset))
-            ret -= pval
-            return ret
-        return func
-
-    f = paltfunct(sqrtqnull, palt, -1.)
-    sqrtqalt = brentq(f, 0, 20)
-
-    fmed = paltfunct(sqrtqalt, norm.cdf(0), 1.)
-    sqrtqalt_med = brentq(fmed, 0, 20)
-    p_med = 2.*(1-norm.cdf(sqrtqalt_med))
-
-    fp1 = paltfunct(sqrtqalt, norm.cdf(1), 1.)
-    sqrtqalt_p1 = brentq(fp1, 0, 20)
-    p_p1 = 2.*(1-norm.cdf(sqrtqalt_p1))
-
-    fp2 = paltfunct(sqrtqalt, norm.cdf(2), 1.)
-    sqrtqalt_p2 = brentq(fp2, 0, 20)
-    p_p2 = 2.*(1-norm.cdf(sqrtqalt_p2))
-
-    fm1 = paltfunct(sqrtqalt, norm.cdf(-1), 1.)
-    sqrtqalt_m1 = brentq(fm1, 0, 20)
-    p_m1 = 2.*(1-norm.cdf(sqrtqalt_m1))
-
-    fm2 = paltfunct(sqrtqalt, norm.cdf(-2), 1.)
-    sqrtqalt_m2 = brentq(fm2, 0, 20)
-    p_m2 = 2.*(1-norm.cdf(sqrtqalt_m2))
-
-    return p_med, p_p1, p_p2, p_m1, p_m2
-
-
-def Expected_POI(poi_alt, sigma, n=0.0, alpha=0.05, CLs=False):
-
-    if CLs:
-        ret = poi_alt + sigma * (norm.ppf(1 - alpha*norm.cdf(n)) + n)
-    else:
-        ret = poi_alt + sigma * (norm.ppf(1 - alpha) + n)
-
-    return ret
+# def Expected_Pvalues_2sided(pnull, palt):
+#
+#     sqrtqnull = norm.ppf(1 - pnull/2)
+#
+#     def paltfunct(offset, pval, icase):
+#         def func(x):
+#             ret = 1. - norm.cdf(x + offset)
+#             ret += 1. - norm.cdf(icase*(x - offset))
+#             ret -= pval
+#             return ret
+#         return func
+#
+#     f = paltfunct(sqrtqnull, palt, -1.)
+#     sqrtqalt = brentq(f, 0, 20)
+#
+#     fmed = paltfunct(sqrtqalt, norm.cdf(0), 1.)
+#     sqrtqalt_med = brentq(fmed, 0, 20)
+#     p_med = 2.*(1-norm.cdf(sqrtqalt_med))
+#
+#     fp1 = paltfunct(sqrtqalt, norm.cdf(1), 1.)
+#     sqrtqalt_p1 = brentq(fp1, 0, 20)
+#     p_p1 = 2.*(1-norm.cdf(sqrtqalt_p1))
+#
+#     fp2 = paltfunct(sqrtqalt, norm.cdf(2), 1.)
+#     sqrtqalt_p2 = brentq(fp2, 0, 20)
+#     p_p2 = 2.*(1-norm.cdf(sqrtqalt_p2))
+#
+#     fm1 = paltfunct(sqrtqalt, norm.cdf(-1), 1.)
+#     sqrtqalt_m1 = brentq(fm1, 0, 20)
+#     p_m1 = 2.*(1-norm.cdf(sqrtqalt_m1))
+#
+#     fm2 = paltfunct(sqrtqalt, norm.cdf(-2), 1.)
+#     sqrtqalt_m2 = brentq(fm2, 0, 20)
+#     p_m2 = 2.*(1-norm.cdf(sqrtqalt_m2))
+#
+#     return p_med, p_p1, p_p2, p_m1, p_m2

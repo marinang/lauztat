@@ -7,6 +7,7 @@ Parameter classes
 from iminuit import describe
 import attr
 from attr import attrs, attrib
+from math import pi, sqrt, exp, log
 
 
 def check_range(instance=None, range=None, value=None):
@@ -43,6 +44,15 @@ def check_initstep(instance=None, initstep=None, value=None):
         if value >= (_range[1] - _range[0]):
             raise ValueError("Initial step should be strictly lower than the \
             range:{0}.".format(_range))
+
+
+def check_pos(instance=None, attribute=None, value=None):
+    """
+    Validator for strictly positive number attribute.
+    """
+    name = attribute.name
+    if value <= 0:
+        raise ValueError("{0} should be strictly positive.".format(name))
 
 
 def check_constraint(instance=None, constraint=None, value=None):
@@ -100,6 +110,11 @@ class Observable(Named, Range):
             obs = Observable(name="x", range=(0,100))
     """
 
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.Observable"
+        return dict
+
     def __repr__(self):
         return "Observable('{0}', range={1})".format(self.name, self.range)
 
@@ -107,7 +122,7 @@ class Observable(Named, Range):
 @attrs(repr=False, slots=True)
 class Constant(Named):
     """
-    Class for constant paramaters:
+    Class for constant parameters:
 
         **Arguments:**
 
@@ -130,6 +145,11 @@ class Constant(Named):
         ret["fix_{0}".format(self.name)] = True
         return ret
 
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.Constant"
+        return dict
+
     def __repr__(self):
         return "Constant('{0}', value={1})".format(self.name, self.value)
 
@@ -137,7 +157,7 @@ class Constant(Named):
 @attrs(repr=False, slots=True)
 class Variable(Named, Range):
     """
-    Class for variable paramaters.
+    Class for variable parameters.
 
         **Arguments:**
 
@@ -146,13 +166,10 @@ class Variable(Named, Range):
             - **initvalue** (optionnal). a number (int/float) inside the range
             - **initstep** (optionnal). a number (int/float) lower than the
             range size
-            - **constraint** (optionnal). a function with one argument that
-            returns a number (int/float)
 
         **Examples:**
             var = (name="sigma", range=(0, 5))
             var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
-            var = (name="sigma", range=(0, 5), constraint= lambda x: (x-2)**2
     """
 
     initvalue = attr.ib(type=(int, float),
@@ -163,9 +180,9 @@ class Variable(Named, Range):
                        validator=[attr.validators.instance_of((int, float)),
                                   check_initstep],
                        default=-1.)
-    constraint = attr.ib(type=(int, float),
-                         validator=check_constraint,
-                         default=None)
+    isyield = attr.ib(type=(bool),
+                      validator=attr.validators.instance_of(bool),
+                      default=False)
 
     def __attrs_post_init__(self):
         if self.initvalue == -1:
@@ -184,11 +201,132 @@ class Variable(Named, Range):
         return ret
 
     def __repr__(self):
-        basis = "Variable('{0}', initvalue={1}, range={2}, initstep={3}"
-        basis = basis.format(self.name, self.initvalue,
-                             self.range, self.initstep)
+        rep = "Variable('{0}', initvalue={1}, range={2}, initstep={3})"
+        rep = rep.format(self.name, self.initvalue, self.range, self.initstep)
+        return rep
 
-        if self.constraint:
-            return basis + ", constraint={0})".format(self.constraint)
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.Variable"
+        return dict
 
-        return basis + ")"
+
+def check_poi(instance=None, poivalue=None, value=None):
+    msg = "Please provide a number (int/float) or a list/array of numbers."
+    if isinstance(value, (int, float)):
+        pass
+    elif hasattr(value, "__iter__"):
+        if all(isinstance(v, (int, float)) for v in value):
+            pass
+        else:
+            raise ValueError(msg)
+    else:
+        raise ValueError(msg)
+
+
+@attrs(repr=False, frozen=True)
+class POI(Named):
+    """
+    Class for parameters of interest:
+
+        **Arguments:**
+
+            - **name** a string
+            - **value** a single or a list of int/float.
+
+        **Example:**
+            poi = POI(name="Nisg", value=0)
+            poi = POI(name="Nisg", value=np.linspace(0,10,10))
+    """
+
+    value = attr.ib(validator=check_poi)
+
+    def __repr__(self):
+        repr = "POI('{0}'".format(self.name)
+        if self.value is not None:
+            return "{0}, value={1})".format(repr, self.value)
+        else:
+            return repr + ")"
+
+    def __iter__(self):
+        if not hasattr(self.value, "__iter__"):
+            value = [self.value]
+        else:
+            value = self.value
+
+        for v in value:
+            yield POI(self.name, v)
+
+    def __len__(self):
+        if not hasattr(self.value, "__iter__"):
+            return 1
+        else:
+            return len(self.value)
+
+
+@attrs(repr=False, slots=True)
+class GaussianConstrained(Named, Range):
+    """
+    Class for gaussian constrained parameters.
+
+        **Arguments:**
+
+            - **name** a string
+            - **value** a tuple with lower and upper limits of the range
+            - **mu** a number (int/float). Mean value of the gaussian.
+            - **sigma** a number > 0 (int/float). Sigma of the gaussian.
+            - **initstep** (optionnal). a number (int/float) lower than the
+            range size
+
+    """
+
+    mu = attr.ib(type=(int, float),
+                 validator=[attr.validators.instance_of((int, float))])
+    sigma = attr.ib(type=(int, float),
+                    validator=[attr.validators.instance_of((int, float)),
+                               check_pos])
+    initstep = attr.ib(type=(int, float),
+                       validator=[attr.validators.instance_of((int, float)),
+                                  check_initstep], default=-1.)
+
+    def __attrs_post_init__(self):
+        if self.initstep == -1:
+            self.initstep = (self.range[1] - self.range[0])/100.
+
+    def tominuit(self):
+        """
+        Returns a dictionnary of parameters for iminuit.
+        """
+        ret = {}
+        ret[self.name] = self.mu
+        ret["limit_{0}".format(self.name)] = self.range
+        ret["error_{0}".format(self.name)] = self.initstep
+        return ret
+
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.GaussianConstrained"
+        return dict
+
+    def evalconstraint(self, param):
+        if self.sigma < 1e-10:
+            ret = 1e-300
+        else:
+            d = (param-self.mu)/self.sigma
+            d2 = d*d
+            ret = 1/(sqrt(2*pi)*self.sigma)*exp(-0.5*d2)
+
+        return ret
+
+    def log_evalconstraint(self, param):
+        ret = log(1 / (self.sigma * sqrt(2*pi)))
+        ret += -0.5 * ((param - self.mu) / self.sigma)**2
+        return ret
+
+    def __repr__(self):
+        rep = "GaussianConstrained('{0}', mu={1}, sigma={2}, range={3},"
+        rep += " initstep={4})"
+        rep = rep.format(self.name, self.mu, self.sigma, self.range,
+                         self.initstep)
+
+        return rep
