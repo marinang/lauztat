@@ -52,6 +52,18 @@ class FrequentistCalculator(Calculator):
 
         return minimizers, toyresult
 
+    def add_toys(self, poi, toys):
+        bf = toys["bestfit"]["values"]
+        nllbf = toys["bestfit"]["nll"]
+
+        nlldict = {}
+        for k, v in toys["nll"]:
+            poi_ = POI(poi.name, k)
+            nlldict[poi_] = v
+
+        toyresult = {"bestfit": {"values": bf, "nll": nllbf}, "nll": nlldict}
+        self._toysresults[poi] = toyresult
+
     def dotoys_null(self, poinull):
         for p in poinull:
             if p in self._toysresults.keys():

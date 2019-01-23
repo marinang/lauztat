@@ -4,7 +4,9 @@ import collections
 from ..utils.stats import integrate1d
 import copy
 from probfit import gen_toy
+from probfit.costfunc import SimultaneousFit
 from scipy.stats import norm, poisson
+from itertools import groupby
 
 """
 Wrappers for iminuit and pdf and loss function from probfit
@@ -277,15 +279,19 @@ class LossFunctionWrapper(object):
 
         self.func_code = func_code(self.parameters)
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
+
+        eval_constraint = kwargs.pop('eval_constraint', True)
+
         kwargs = {p: args[i] for i, p in enumerate(self.parameters)}
 
         ret = self.lossfunction(*args)
         if not self._extinloss and self.model.extended:
             ret += integrate1d(self.model, self.model.obs[0].range, 200, *args)
-        for p in self.model.vars:
-            if hasattr(p, "log_evalconstraint"):
-                ret += -p.log_evalconstraint(kwargs[p.name])
+        if eval_constraint:
+            for p in self.model.vars:
+                if hasattr(p, "log_evalconstraint"):
+                    ret += -p.log_evalconstraint(kwargs[p.name])
         return ret
 
     @property
@@ -295,6 +301,14 @@ class LossFunctionWrapper(object):
     @property
     def parameters(self):
         return self._parameters
+
+    @property
+    def variables(self):
+        return self.model.variables
+
+    @property
+    def freeparameters(self):
+        return [v.name for v in self.variables if not isinstance(v, Constant)]
 
     @property
     def model(self):
@@ -313,31 +327,97 @@ class LossFunctionWrapper(object):
         return LossFunctionWrapper(lossfunction)
 
 
+class SimultaneousFitWrapper(object):
+
+    def __init__(self, *args):
+
+        self._lossfunctions = list(args)
+
+        self._parameters = []
+        self._variables = []
+        for lf in self.lossfunctions:
+            for v in lf.variables:
+                if v not in self._variables:
+                    self._parameters.append(v.name)
+                    self._variables.append(v)
+
+        self.func_code = func_code(self.parameters)
+
+    def __call__(self, *args):
+
+        kwargs = {p: args[i] for i, p in enumerate(self.parameters)}
+
+        ret = 0
+
+        for lf in self.lossfunctions:
+            args = [kwargs[a] for a in lf.parameters]
+            ret += lf(*args, eval_constraint=False)
+
+        for p in self.variables:
+            if hasattr(p, "log_evalconstraint"):
+                ret += -p.log_evalconstraint(kwargs[p.name])
+
+        return ret
+
+    @property
+    def lossfunctions(self):
+        return self._lossfunctions
+
+    @property
+    def parameters(self):
+        return self._parameters
+
+    @property
+    def variables(self):
+        return self._variables
+
+    @property
+    def freeparameters(self):
+        return [v.name for v in self.variables if not isinstance(v, Constant)]
+
+    def copy(self):
+        lfs = []
+        for lf in self.lossfunctions:
+            lfs.append(copy.deepcopy(lf))
+        return SimultaneousFitWrapper(*lfs)
+
+
 class MinimizerWrapper(object):
 
     def __init__(self, lossfunction, **kwargs):
 
-        if not isinstance(lossfunction, LossFunctionWrapper):
+        if not isinstance(lossfunction, (LossFunctionWrapper,
+                                         SimultaneousFitWrapper)):
             raise ValueError("Loss function need to be wrapped under\
                              statnight.utils.LossFunctionWrapper.")
-        for v in lossfunction.model.variables:
+        for v in lossfunction.variables:
             pars = v.tominuit()
             kwargs.update(pars)
 
         minuit = Minuit(lossfunction, errordef=0.5, **kwargs)
 
         self._minuit = minuit
+        self._nfreeparameters = len(lossfunction.freeparameters)
 
     def minimize(self):
         self._minuit.migrad()
 
     @property
     def values(self):
-        return self._minuit.values
+        return dict(self._minuit.values)
 
     @property
     def errors(self):
-        return self._minuit.errors
+        return dict(self._minuit.errors)
+
+    @property
+    def nfreeparameters(self):
+        return self._nfreeparameters
+
+    @property
+    def result(self):
+        return dict(values=self.values, errors=self.errors,
+                    nfreeparameters=self.nfreeparameters)
 
     def profile(self, param, value):
         range = (value, -1.)
