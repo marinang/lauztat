@@ -31,14 +31,17 @@ class AsymptoticCalculator(Calculator):
 
     def asymov_dataset(self, poi):
         if poi not in self._asymov_dataset.keys():
-            model = self.config.model.copy()
-            model.rm_vars(poi.name)
-            model.add_vars(Constant(poi.name, poi.value))
+            models = []
+            for m in self.config.models():
+                model = m.copy()
+                model.rm_vars(poi.name)
+                model.add_vars(Constant(poi.name, poi.value))
+                models.append(model)
 
-            data = self.config.data
+            datasets = self.config.datasets
             weights = self.config.weights
 
-            loss = self.config.lossbuilder(model, data, weights)
+            loss = self.config.lossbuilder(models, datasets, weights)
 
             minimizer = self.config.minimizer(loss)
 
@@ -48,23 +51,27 @@ class AsymptoticCalculator(Calculator):
             minimizer.minimize()
             values = minimizer.values
 
-            bounds = model.obs[0].range
+            asydatasets = []
 
-            model = self.config.model.copy()
-            asydataset = generate_asymov_dataset(model, values, bounds)
+            for m in models:
+                bounds = m.obs[0].range
+                asydatasets.append(generate_asymov_dataset(m, values, bounds))
 
-            self._asymov_dataset[poi] = asydataset
+            self._asymov_dataset[poi] = asydatasets
 
         return self._asymov_dataset[poi]
 
     def asymov_minimizer(self, poi):
         if poi not in self._asymov_minimizer.keys():
-            model = self.config.model.copy()
+            models = [m.copy for m in self.config.model]
+            datasets = []
+            weights = []
 
-            data = self.asymov_dataset(poi)[0]
-            weights = self.asymov_dataset(poi)[1]
+            for ad in self.asymov_dataset(poi):
+                datasets.append(ad[0])
+                weights.append(ad[1])
 
-            loss = self.config.lossbuilder(model, data, weights)
+            loss = self.config.lossbuilder(models, datasets, weights)
 
             self._asymov_minimizer[poi] = self.config.minimizer(loss)
 
