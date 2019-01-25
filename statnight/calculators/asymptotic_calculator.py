@@ -63,7 +63,7 @@ class AsymptoticCalculator(Calculator):
 
     def asymov_minimizer(self, poi):
         if poi not in self._asymov_minimizer.keys():
-            models = [m.copy for m in self.config.models]
+            models = [m.copy() for m in self.config.models]
             datasets = []
             weights = []
 
