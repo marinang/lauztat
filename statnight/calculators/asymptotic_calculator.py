@@ -32,7 +32,7 @@ class AsymptoticCalculator(Calculator):
     def asymov_dataset(self, poi):
         if poi not in self._asymov_dataset.keys():
             models = []
-            for m in self.config.models():
+            for m in self.config.models:
                 model = m.copy()
                 model.rm_vars(poi.name)
                 model.add_vars(Constant(poi.name, poi.value))
