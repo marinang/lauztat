@@ -8,6 +8,7 @@ from iminuit import describe
 import attr
 from attr import attrs, attrib
 from math import pi, sqrt, exp, log
+import numpy as np
 
 
 def check_range(instance=None, range=None, value=None):
@@ -93,19 +94,21 @@ class Range(object):
     """
 
     range = attrib(validator=[attr.validators.instance_of((tuple, list)),
-                              check_range])
+                              check_range],
+                   default=(-np.infty, np.infty))
+
+    @property
+    def area(self):
+        return self.range[1] - self.range[0]
 
 
 @attrs(repr=False, slots=True)
-class Observable(Named, Range):
+class Space(Named, Range):
     """
     Class for physics observables.
-
         **Arguments:**
-
             - **name** a string
             - **range** a tuple with lower and upper limits of the range
-
         **Example:**
             obs = Observable(name="x", range=(0,100))
     """
@@ -123,12 +126,9 @@ class Observable(Named, Range):
 class Constant(Named):
     """
     Class for constant parameters:
-
         **Arguments:**
-
             - **name** a string
             - **value** a number (int/float)
-
         **Example:**
             const = Constant(name="mu", value="1.2")
     """
@@ -158,15 +158,12 @@ class Constant(Named):
 class Variable(Named, Range):
     """
     Class for variable parameters.
-
         **Arguments:**
-
             - **name** a string
             - **value** a tuple with lower and upper limits of the range
             - **initvalue** (optionnal). a number (int/float) inside the range
             - **initstep** (optionnal). a number (int/float) lower than the
             range size
-
         **Examples:**
             var = (name="sigma", range=(0, 5))
             var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
@@ -211,83 +208,29 @@ class Variable(Named, Range):
         return dict
 
 
-def check_poi(instance=None, poivalue=None, value=None):
-    msg = "Please provide a number (int/float) or a list/array of numbers."
-    if isinstance(value, (int, float)):
-        pass
-    elif hasattr(value, "__iter__"):
-        if all(isinstance(v, (int, float)) for v in value):
-            pass
-        else:
-            raise ValueError(msg)
-    else:
-        raise ValueError(msg)
-
-
-@attrs(repr=False, frozen=True)
-class POI(Named):
-    """
-    Class for parameters of interest:
-
-        **Arguments:**
-
-            - **name** a string
-            - **value** a single or a list of int/float.
-
-        **Example:**
-            poi = POI(name="Nisg", value=0)
-            poi = POI(name="Nisg", value=np.linspace(0,10,10))
-    """
-
-    value = attr.ib(validator=check_poi)
-
-    def __repr__(self):
-        repr = "POI('{0}'".format(self.name)
-        if self.value is not None:
-            return "{0}, value={1})".format(repr, self.value)
-        else:
-            return repr + ")"
-
-    def __iter__(self):
-        if not hasattr(self.value, "__iter__"):
-            value = [self.value]
-        else:
-            value = self.value
-
-        for v in value:
-            yield POI(self.name, v)
-
-    def __len__(self):
-        if not hasattr(self.value, "__iter__"):
-            return 1
-        else:
-            return len(self.value)
-
-
 @attrs(repr=False, slots=True)
 class GaussianConstrained(Named, Range):
     """
     Class for gaussian constrained parameters.
-
         **Arguments:**
-
             - **name** a string
             - **value** a tuple with lower and upper limits of the range
             - **mu** a number (int/float). Mean value of the gaussian.
             - **sigma** a number > 0 (int/float). Sigma of the gaussian.
             - **initstep** (optionnal). a number (int/float) lower than the
             range size
-
     """
 
     mu = attr.ib(type=(int, float),
-                 validator=[attr.validators.instance_of((int, float))])
+                 validator=[attr.validators.instance_of((int, float))],
+                 kw_only=True)
     sigma = attr.ib(type=(int, float),
                     validator=[attr.validators.instance_of((int, float)),
-                               check_pos])
+                               check_pos],
+                    kw_only=True)
     initstep = attr.ib(type=(int, float),
                        validator=[attr.validators.instance_of((int, float)),
-                                  check_initstep], default=-1.)
+                                  check_initstep], default=-1., kw_only=True)
 
     def __attrs_post_init__(self):
         if self.initstep == -1:
@@ -330,3 +273,124 @@ class GaussianConstrained(Named, Range):
                          self.initstep)
 
         return rep
+
+
+@attrs(repr=False, slots=True, frozen=True)
+class Parameter(Named, Range):
+    """
+    Class for variable parameters.
+        **Arguments:**
+            - **name** a string
+            - **value** a tuple with lower and upper limits of the range
+            - **initvalue** (optionnal). a number (int/float) inside the range
+            - **initstep** (optionnal). a number (int/float) lower than the
+            range size
+        **Examples:**
+            var = (name="sigma", range=(0, 5))
+            var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
+    """
+
+    value = attr.ib(type=(int, float),
+                    validator=[attr.validators.instance_of((int, float)),
+                               check_initvalue], default=-1.)
+    initstep = attr.ib(type=(int, float),
+                       validator=[attr.validators.instance_of((int, float)),
+                                  check_initstep],
+                       default=-1.)
+    isyield = attr.ib(type=(bool),
+                      validator=attr.validators.instance_of(bool),
+                      default=False)
+
+    floating = attr.ib(type=(bool),
+                       validator=attr.validators.instance_of(bool),
+                       default=True)
+
+    def __attrs_post_init__(self):
+        if self.value == -1:
+            value = self.range[0] + (self.range[1] - self.range[0])/2.
+            object.__setattr__(self, "value", value)
+        if self.initstep == -1:
+            initstep = (self.range[1] - self.range[0])/100.
+            object.__setattr__(self, "initstep", initstep)
+
+    def set_value(self, value):
+        object.__setattr__(self, "value", value)
+
+    def tominuit(self):
+        """
+        Returns a dictionnary of parameters for iminuit.
+        """
+        ret = {}
+        ret[self.name] = self.value
+        ret["limit_{0}".format(self.name)] = self.range
+        ret["error_{0}".format(self.name)] = self.initstep
+        return ret
+
+    def __repr__(self):
+        if self.floating:
+            rep = "Parameter('{0}', value={1}, range={2}, initstep={3})"
+            rep = rep.format(self.name, self.value, self.range, self.initstep)
+        else:
+            rep = "Parameter('{0}', value={1})"
+            rep = rep.format(self.name, self.value)
+        return rep
+
+    def todict(self):
+        dict = attr.asdict(self)
+        dict["type"] = "statnight.parameters.Parameter"
+        return dict
+
+
+# @attrs(repr=False, slots=True, frozen=True)
+class POI(object):
+    """
+    Class for parameters of interest:
+
+        **Arguments:**
+
+            - **parameter** a parameter
+            - **value** a single or a list of int/float.
+
+        **Example:**
+            poi = POI(name="Nisg", value=0)
+            poi = POI(name="Nisg", value=np.linspace(0,10,10))
+    """
+
+    def __init__(self, parameter, value):
+
+        self.parameter = parameter
+        self.name = parameter.name
+        self.value = value
+
+    def __repr__(self):
+        repr = "POI('{0}'".format(self.name)
+        if self.value is not None:
+            return "{0}, value={1})".format(repr, self.value)
+        else:
+            return repr + ")"
+
+    def __iter__(self):
+        if not hasattr(self.value, "__iter__"):
+            value = [self.value]
+        else:
+            value = self.value
+
+        for v in value:
+            yield POI(self.parameter, v)
+
+    def __len__(self):
+        if not hasattr(self.value, "__iter__"):
+            return 1
+        else:
+            return len(self.value)
+
+    def __eq__(self, other):
+        if not isinstance(other, POI):
+            return NotImplemented
+        if self.value == other.value and self.name == other.name:
+            return True
+        else:
+            return False
+
+    def __hash__(self):
+        return hash((self.name, self.value))

@@ -2,8 +2,8 @@
 
 class Config(object):
 
-    def __init__(self, models, datasets, lossbuilder, minimizer, weights=None,
-                 bestfit={}):
+    def __init__(self, models, datasets, lossbuilder, minimizer, pll,
+                 sampler=None, weights=None, bestfit={}):
 
         if not isinstance(models, (list, tuple)):
             models = [models]
@@ -17,20 +17,17 @@ class Config(object):
         if not isinstance(weights, (list, tuple)):
             weights = [weights]
 
-        self.models = [m.copy() for m in models]
+        self.models = models
         self.datasets = datasets
         self.weights = weights
         self.lossbuilder = lossbuilder
         self.minimizer = minimizer
+        self.pll = pll
+        self.sampler = sampler
         self._bestfit = bestfit
 
     def obsloss(self):
         return self.lossbuilder(self.models, self.datasets, self.weights)
-
-    def obsminimizer(self):
-        if not hasattr(self, "_obsminimizer"):
-            self._obsminimizer = self.minimizer(self.obsloss())
-        return self._obsminimizer
 
     def loop(self):
         for n in range(len(self.models)):
@@ -48,9 +45,8 @@ class Config(object):
             return self._bestfit
         else:
             print("Get fit best values!")
-            self.obsminimizer().minimize()
-            values = self.obsminimizer().values
-            self._bestfit = values
+            mininum = self.minimizer.minimize(loss=self.obsloss())
+            self._bestfit = mininum
             return self._bestfit
 
     @bestfit.setter

@@ -1,12 +1,69 @@
 from iminuit import describe, Minuit
-from ..parameters import Observable, Variable, Constant, GaussianConstrained
+from ..parameters import Space, Variable, Constant, GaussianConstrained
 import collections
 from ..utils.stats import integrate1d
 import copy
 from probfit import gen_toy
-from probfit.costfunc import SimultaneousFit
 from scipy.stats import norm, poisson
-from itertools import groupby
+
+
+class PDF(object):
+
+    def __init__(self, func, parameters=[]):
+        """
+        __init__ function
+        """
+        hascall = hasattr(func, "__call__")
+        hasintegrate = hasattr(func, "integrate")
+
+        if not(hascall and hasintegrate):
+            msg = "{0} doesn't seem to be a model."
+            raise ValueError(msg.format(func))
+
+        self._func = func
+        self._parameters = describe(func)
+
+        self.func_code = func_code(self.parameters)
+
+        self.extended = False
+
+    def __call__(self, *args):
+        return self.model(*args)
+
+    def integrate(self, *args):
+        return self.model.integrate(*args)
+
+    def sample(self, nsample=None, **kwargs):
+
+        if not self.extended:
+            if nsample is None:
+                msg = "Please provide the number of sample to generate."
+                raise ValueError(msg)
+        else:
+            nsample = 0
+
+        for p in self.variables:
+            if isinstance(p, GaussianConstrained):
+                val = norm.rvs(loc=p.mu, scale=p.sigma)
+                kwargs[p.name] = val
+            elif self.extended:
+                if isinstance(p, Variable) and p.isyield:
+                    val = poisson.rvs(mu=kwargs[p.name])
+                    kwargs[p.name] = val
+                    nsample += val
+
+        return gen_toy(self.model, nsample, bound=self.obs[0].range, **kwargs)
+
+    def todict(self):
+        dict = {}
+        for o in self.obs:
+            dict[o.name] = o.todict()
+        for v in self.vars:
+            dict[v.name] = v.todict()
+        dict["extended"] = self.extended
+        return dict
+
+
 
 """
 Wrappers for iminuit and pdf and loss function from probfit
@@ -19,9 +76,18 @@ class func_code(object):
         self.co_argcount = len(arg)
 
 
+"""
+class DatasetWrapper(object):
+
+    def __init__(self, data, weights):
+
+        self.data = data
+"""
+
+
 class ModelWrapper(object):
 
-    def __init__(self, model, observables=[], variables=[], extended=False):
+    def __init__(self, model, Spaces=[], variables=[], extended=False):
         """
         __init__ function
         """
@@ -36,7 +102,7 @@ class ModelWrapper(object):
         self._parameters = describe(model)
         self._extended = extended
 
-        self._obs = check_obs(observables)
+        self._obs = check_obs(Spaces)
         self._vars = check_vars(variables)
         self._check_params()
         self.func_code = func_code(self.parameters)
@@ -72,41 +138,41 @@ class ModelWrapper(object):
         """
         self._extended = bool
 
-    # Observables
+    # Spaces
 
     @property
-    def observables(self):
+    def Spaces(self):
         """
-        Returns the observables of the model.
+        Returns the Spaces of the model.
         """
         return self.obs
 
     @property
     def obs(self):
         """
-        Returns the observables of the model, same as observables.
+        Returns the Spaces of the model, same as Spaces.
         """
         return list(self._obs)
 
-    def add_obs(self, *observables):
+    def add_obs(self, *Spaces):
         """
-        Add observables to the model.
+        Add Spaces to the model.
 
         **Arguments:**
 
-            -**observables** an/a list of statnight.parameters.Observable.
+            -**Spaces** an/a list of statnight.parameters.Space.
         """
-        obs = check_obs(observables)
+        obs = check_obs(Spaces)
         _names = [o.name for o in obs]
         for n in _names:
             if n in self.obs_names():
-                raise ValueError("'{0}' already in observables.".format(n))
+                raise ValueError("'{0}' already in Spaces.".format(n))
         self._check_params(obs)
         self._obs += obs
 
     def rm_obs(self, names):
         """
-        Remove observables from the model.
+        Remove Spaces from the model.
 
         **Arguments:**
 
@@ -119,11 +185,11 @@ class ModelWrapper(object):
             if par is not None:
                 self._vars.remove(par)
             else:
-                raise ValueError("{0} not in observables.".format(n))
+                raise ValueError("{0} not in Spaces.".format(n))
 
     def obs_names(self):
         """
-        Returns the names of the observables.
+        Returns the names of the Spaces.
         """
         return [o.name for o in self.obs]
 
@@ -195,7 +261,7 @@ class ModelWrapper(object):
 
         if params:
             for p in params:
-                if isinstance(p, Observable):
+                if isinstance(p, Space):
                     obs_.append(p.name)
                 elif isinstance(p, (Variable, Constant)):
                     vars_.append(p.name)
@@ -216,7 +282,7 @@ class ModelWrapper(object):
                 if p in obs_ and p in vars_:
                     duplicates.append(p)
             duplicates = list(set(duplicates))
-            msg = "{0} cannot be both in observables and in variables!"
+            msg = "{0} cannot be both in Spaces and in variables!"
             msg = msg.format(duplicates)
             raise ValueError(msg)
 
@@ -427,19 +493,19 @@ class MinimizerWrapper(object):
         return prof[1]
 
 
-def check_obs(observables):
+def check_obs(Spaces):
 
-    if not isinstance(observables, (list, tuple)):
-        observables = [observables]
-    observables = list(observables)
+    if not isinstance(Spaces, (list, tuple)):
+        Spaces = [Spaces]
+    Spaces = list(Spaces)
 
-    if len(observables) == 0:
-        return observables
+    if len(Spaces) == 0:
+        return Spaces
     else:
-        if not all(isinstance(obs, Observable) for obs in observables):
-            msg = "Please provide a Observable (a list of Observable's)"
+        if not all(isinstance(obs, Space) for obs in Spaces):
+            msg = "Please provide a Space (a list of Space's)"
             raise ValueError(msg)
-        return observables
+        return Spaces
 
 
 def check_vars(variables):

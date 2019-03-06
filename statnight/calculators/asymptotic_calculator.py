@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python
 
-from .calculator import Calculator
+from .calculator import Calculator, qdist
 from scipy.stats import norm
 import numpy as np
 from ..utils.stats import integrate1d
 from ..parameters import Constant, POI
-from numba import jit
 
 
 class AsymptoticCalculator(Calculator):
@@ -97,9 +96,7 @@ class AsymptoticCalculator(Calculator):
         else:
             bestfitpoi = POI(poiname, bf)
 
-        nll_poinull_obs = self.obs_nll(poinull)
-        nll_bestfitpoi_obs = self.obs_nll(bestfitpoi)
-        qobs = 2*(nll_poinull_obs - nll_bestfitpoi_obs)
+        qobs = self.qobs(poinull, bestfitpoi)
 
         qobs = qdist(qobs, bestfitpoi.value, poinull.value, onesided,
                      onesideddiscovery)
@@ -212,19 +209,6 @@ def generate_asymov_dataset(model, params, bounds, nbins=100):
 
     return data_asy, weight_asy
 
-
-@jit(nopython=True)
-def qdist(qdist, bestfit, poival, onesided=True, onesideddiscovery=False):
-    zeros = np.zeros(qdist.shape)
-    if onesideddiscovery:
-        condition = (bestfit < poival) | (qdist < 0)
-        q = np.where(condition, zeros, qdist)
-    elif onesided:
-        condition = (bestfit > poival) | (qdist < 0)
-        q = np.where(condition, zeros, qdist)
-    else:
-        q = qdist
-    return q
 
 # def Expected_Pvalues_2sided(pnull, palt):
 #

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python
 
-from .calculator import Calculator
+from .calculator import Calculator, qdist
 from ..parameters import POI
 import numpy as np
 from scipy.stats import norm
-from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline
+import zfit
 
 
 class FrequentistCalculator(Calculator):
@@ -26,31 +26,56 @@ class FrequentistCalculator(Calculator):
         self.ntoysnull = ntoysnull
         self.ntoysalt = ntoysalt
 
-    def dotoys(self, poigen, ntoys):
-        kwargs = dict(self.config.bestfit)
-        kwargs[poigen.name] = poigen.value
-        nsample = len(self.config.data)
+    def dotoys(self, poigen, ntoys, poieval, printfreq=10):
+
         config = self.config
-        model = config.model.copy()
-        toys = gentoys(model, ntoys, nsample, **kwargs)
+        models = config.models
+        minimizer = config.minimizer.copy()
+        weights = config.weights
+        samplers = config.sampler(models)
+        loss = config.lossbuilder(models, samplers, weights)
+        minimizer.verbosity = 0
+        g_param = poigen.parameter
+        g_value = poigen.value
 
-        minimizers = {}
-        bestfit = np.empty(len(toys))
-        nllbestfit = np.empty(len(toys))
-        for i, t in enumerate(toys):
-            model = config.model.copy()
-            loss = config.lossbuilder(model, t)
-            min_toy = config.minimizer(loss, pedantic=False, print_level=0)
-            min_toy.minimize()
-            minimizers[i] = min_toy
-            bf = min_toy.values[poigen.name]
-            bestfit[i] = bf
-            nllbestfit[i] = min_toy.profile(poigen.name, bf)
+        result = {"bestfit": {"values": np.empty(ntoys),
+                              "nll": np.empty(ntoys)}}
+        result["nll"] = {}
+        for p in poieval:
+            result["nll"][p] = np.empty(ntoys)
 
-        toyresult = {"bestfit": {"values": bestfit, "nll": nllbestfit}}
-        self._toysresults[poigen] = toyresult
+        printfreq = ntoys * (1/printfreq)
 
-        return minimizers, toyresult
+        for i in range(ntoys):
+            converged = False
+            toprint = i % printfreq == 0
+            while converged is False:
+                with g_param.set_value(g_value):
+                    # if toprint:
+                    #     print("Used to generate: ", zfit.run(g_param))
+                    for s in samplers:
+                        s.resample()
+                bf = minimizer.minimize(loss=loss)
+                converged = bf.converged
+                if not converged:
+                    # print(i, "not converging!")
+                    continue
+                bf = bf.params[g_param]["value"]
+                result["bestfit"]["values"][i] = bf
+                result["bestfit"]["nll"][i] = config.pll(loss, g_param, bf)
+                for p in poieval:
+                    param_ = p.parameter
+                    val_ = p.value
+                    result["nll"][p][i] = config.pll(loss, param_, val_)
+
+            if toprint:
+                # deps = models[0].get_dependents()
+                # for d in deps:
+                #     print(d.name, " :", zfit.run(d))
+                # print(zfit.run(g_param), bf)
+                print("{0} toys generated, fitted and scanned!".format(i))
+
+        return result
 
     def add_toys(self, poi, toys):
         bf = toys["bestfit"]["values"]
@@ -65,54 +90,45 @@ class FrequentistCalculator(Calculator):
         self._toysresults[poi] = toyresult
 
     def dotoys_null(self, poinull):
+
+        ntoys = self.ntoysnull
+
         for p in poinull:
             if p in self._toysresults.keys():
                 continue
             msg = "Generating null hypothesis toys for {0}."
             print(msg.format(p))
 
-            minimizers, toyresult = self.dotoys(p, self.ntoysnull)
-            nllp = np.empty(len(minimizers))
-
-            nlldict = {}
-
+            toeval = [p]
             if p.value != 0:
                 p_ = POI(p.name, 0.0)
-                nllp_ = np.empty(len(minimizers))
+                toeval.append(p_)
 
-            for i, m in minimizers.items():
-                nllp[i] = m.profile(p.name, p.value)
-                if p.value != 0:
-                    nllp_[i] = m.profile(p.name, 0.0)
+            toyresult = self.dotoys(p, ntoys, toeval)
 
-            nlldict[p] = nllp
-            if p.value != 0:
-                nlldict[p_] = nllp_
-
-            toyresult["nll"] = nlldict
+            self._toysresults[p] = toyresult
 
     def dotoys_alt(self, poigen, poinull):
-        if poigen not in self._toysresults.keys():
+
+        ntoys = self.ntoysalt
+
+        for p in poigen:
+
+            if p in self._toysresults.keys():
+                continue
             msg = "Generating alt hypothesis toys for {0}."
-            print(msg.format(poigen))
+            print(msg.format(p))
 
-            minimizers, toyresult = self.dotoys(poigen, self.ntoysnull)
-            nlldict = {}
-
-            def addnll(p):
-                nllp = np.empty(len(minimizers))
-                for i, m in minimizers.items():
-                    nllp[i] = m.profile(p.name, p.value)
-                nlldict[p] = nllp
-
-            for p in poinull:
-                addnll(p)
-
+            toeval = [p]
+            for p_ in poinull:
+                toeval.append(p_)
             if 0. not in poinull.value:
-                p = POI(poinull.name, 0.0)
-                addnll(p)
+                p_ = POI(poinull.name, 0.0)
+                toeval.append(p_)
 
-            toyresult["nll"] = nlldict
+            toyresult = self.dotoys(p, ntoys, toeval)
+
+            self._toysresults[p] = toyresult
 
     def poi_bestfit(self, poigen, qtilde=False):
         bf = self._toysresults[poigen]["bestfit"]["values"]
@@ -124,7 +140,7 @@ class FrequentistCalculator(Calculator):
         nll = self._toysresults[poigen]["bestfit"]["nll"]
         if qtilde:
             bf = self._toysresults[poigen]["bestfit"]["values"]
-            nll_zero = self.nll(poigen, POI(poigen.name, 0.))
+            nll_zero = self.nll(poigen, POI(poigen.parameter, 0.))
             nll = np.where(bf < 0, nll_zero, nll)
         return nll
 
@@ -182,17 +198,15 @@ class FrequentistCalculator(Calculator):
     def pvalue(self, poinull, poialt=None, qtilde=False, onesided=True,
                onesideddiscovery=False):
 
-        poiname = poinull.name
+        poiparam = poinull.parameter
 
-        bf = self.config.bestfit[poiname]
+        bf = self.config.bestfit.params[poiparam]["value"]
         if qtilde and bf < 0:
-            bestfitpoi = POI(poiname, 0)
+            bestfitpoi = POI(poiparam, 0)
         else:
-            bestfitpoi = POI(poiname, bf)
+            bestfitpoi = POI(poiparam, bf)
 
-        nll_poinull_obs = self.obs_nll(poinull)
-        nll_bestfitpoi_obs = self.obs_nll(bestfitpoi)
-        qobs = 2*(nll_poinull_obs - nll_bestfitpoi_obs)
+        qobs = self.qobs(poinull, bestfitpoi)
 
         qobs = qdist(qobs, bestfitpoi.value, poinull.value, onesided,
                      onesideddiscovery)
@@ -280,22 +294,13 @@ class FrequentistCalculator(Calculator):
         return ret
 
 
-@jit(nopython=True)
-def qdist(qdist, bestfit, poival, onesided=True, onesideddiscovery=False):
-    zeros = np.zeros(qdist.shape)
-    if onesideddiscovery:
-        condition = (bestfit < poival) | (qdist < 0)
-        q = np.where(condition, zeros, qdist)
-    elif onesided:
-        condition = (bestfit > poival) | (qdist < 0)
-        q = np.where(condition, zeros, qdist)
-    else:
-        q = qdist
-    return q
-
-
-def gentoys(model, ntoys, nsample=None, **kwargs):
+def gentoys(models, ntoys, nsamples=None, **kwargs):
     toys = []
     for n in range(ntoys):
-        toys.append(model.sample(nsample, **kwargs))
+        toy = []
+        for i in range(len(models)):
+            m = models[i]
+            n = nsamples[i]
+            toy.append(m.sample(n, **kwargs))
+        toys.append(toy)
     return toys

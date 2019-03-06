@@ -1,5 +1,8 @@
 from .hypotest import HypoTest
 from scipy.stats import norm
+import matplotlib.pyplot as plt
+from ..calculators import AsymptoticCalculator
+from ..parameters import POI
 
 
 class Discovery(HypoTest):
@@ -27,3 +30,19 @@ class Discovery(HypoTest):
                }
 
         return ret
+
+    def plot_qdist(self, bins=50, log=False, histtype='step', **kwargs):
+
+        if isinstance(self.calculator, AsymptoticCalculator):
+            raise ValueError("Nothing to plot!")
+
+        poiparam = self.poinull.parameter
+        bestfitpoi = self.calculator.config.bestfit.params[poiparam]["value"]
+        bestfitpoi = POI(poiparam, bestfitpoi)
+
+        qnull = self.calculator.qnull(self.poinull)
+        plt.hist(qnull, bins=bins, log=log, histtype=histtype, label="qnull")
+        qobs = self.calculator.qobs(self.poinull, bestfitpoi)
+        plt.axvline(qobs, color="r", label="qobs")
+        plt.xlabel("q")
+        plt.legend(loc="best")
