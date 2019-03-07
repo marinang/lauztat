@@ -88,15 +88,17 @@ class UpperLimit(HypoTest):
         """
 
         pvalues = self.pvalues()
-        poivalues = self.poinull.value
-        poiname = self.poinull.name
+        poinull = self.poinull
+        poivalues = poinull.value
+        poiname = poinull.name
+        poiparam = poinull.parameter
 
         if self.CLs:
             p_ = pvalues["cls"]
         else:
             p_ = pvalues["clsb"]
 
-        bestfitpoi = self.calculator.config.bestfit[poiname]
+        bestfitpoi = self.calculator.config.bestfit.params[poiparam]["value"]
 
         sel = poivalues > bestfitpoi
         poivalues = poivalues[sel]
@@ -109,7 +111,7 @@ class UpperLimit(HypoTest):
             poiul = val[0]
         else:
             raise NotImplementedError
-        poiul = POI(poiname, poiul)
+        poiul = POI(poiparam, poiul)
 
         sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
         exp_poi = self.calculator.expected_poi
@@ -212,3 +214,27 @@ class UpperLimit(HypoTest):
 
         if show:
             plt.show()
+
+    def plot_qdist(self, poinull, bins=50, log=False, histtype='step',
+                   **kwargs):
+
+        if isinstance(self.calculator, AsymptoticCalculator):
+            raise ValueError("Nothing to plot!")
+
+        poiparam = poinull.parameter
+        bestfitpoi = self.calculator.config.bestfit.params[poiparam]["value"]
+        bestfitpoi = POI(poiparam, bestfitpoi)
+
+        qnull = self.calculator.qnull(poinull)
+        plt.hist(qnull, bins=bins, log=log, histtype=histtype, label="qnull",
+                 color="r")
+
+        qalt = self.calculator.qalt(poinull, self.poialt)
+        plt.hist(qalt, bins=bins, log=log, histtype=histtype, label="qalt",
+                 color="b")
+
+        qobs = self.calculator.qobs(poinull, bestfitpoi)
+        plt.axvline(qobs, color="k", label="qobs")
+
+        plt.xlabel("q")
+        plt.legend(loc="best")

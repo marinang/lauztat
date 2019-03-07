@@ -3,7 +3,7 @@
 class Config(object):
 
     def __init__(self, models, datasets, lossbuilder, minimizer, pll,
-                 sampler=None, weights=None, bestfit={}):
+                 sampler=None, weights=None, constraints=None, bestfit={}):
 
         if not isinstance(models, (list, tuple)):
             models = [models]
@@ -18,6 +18,7 @@ class Config(object):
             weights = [weights]
 
         self.models = models
+        self.constraints = constraints
         self.datasets = datasets
         self.weights = weights
         self.lossbuilder = lossbuilder

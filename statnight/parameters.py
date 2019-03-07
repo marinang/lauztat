@@ -369,6 +369,9 @@ class POI(object):
         else:
             return repr + ")"
 
+    def __getitem__(self, i):
+        return POI(self.parameter, self.value[i])
+
     def __iter__(self):
         if not hasattr(self.value, "__iter__"):
             value = [self.value]

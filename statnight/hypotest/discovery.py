@@ -21,7 +21,7 @@ class Discovery(HypoTest):
         Z = norm.ppf(1. - pnull)
 
         if printlevel > 0:
-            print("p_value for the Null hypothesis = {0}".format(pnull))
+            print("\np_value for the Null hypothesis = {0}".format(pnull))
             print("Significance = {0}".format(Z))
 
         ret = {

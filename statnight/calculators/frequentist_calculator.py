@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python
-
 from .calculator import Calculator, qdist
 from ..parameters import POI
 import numpy as np
 from scipy.stats import norm
 from scipy.interpolate import InterpolatedUnivariateSpline
-import zfit
 
 
 class FrequentistCalculator(Calculator):
@@ -26,14 +24,12 @@ class FrequentistCalculator(Calculator):
         self.ntoysnull = ntoysnull
         self.ntoysalt = ntoysalt
 
-    def dotoys(self, poigen, ntoys, poieval, printfreq=10):
+    def dotoys(self, poigen, ntoys, poieval, printfreq=0.2):
 
         config = self.config
         models = config.models
         minimizer = config.minimizer.copy()
         weights = config.weights
-        samplers = config.sampler(models)
-        loss = config.lossbuilder(models, samplers, weights)
         minimizer.verbosity = 0
         g_param = poigen.parameter
         g_value = poigen.value
@@ -44,21 +40,22 @@ class FrequentistCalculator(Calculator):
         for p in poieval:
             result["nll"][p] = np.empty(ntoys)
 
-        printfreq = ntoys * (1/printfreq)
+        printfreq = ntoys * printfreq
 
+        samplers, toys = config.sampler(int(ntoys*1.2), g_param, g_value,
+                                        models)
+
+        loss = config.lossbuilder(models, samplers, weights)
+
+        i = 0
         for i in range(ntoys):
             converged = False
             toprint = i % printfreq == 0
             while converged is False:
-                with g_param.set_value(g_value):
-                    # if toprint:
-                    #     print("Used to generate: ", zfit.run(g_param))
-                    for s in samplers:
-                        s.resample()
+                next(toys)
                 bf = minimizer.minimize(loss=loss)
                 converged = bf.converged
                 if not converged:
-                    # print(i, "not converging!")
                     continue
                 bf = bf.params[g_param]["value"]
                 result["bestfit"]["values"][i] = bf
@@ -69,11 +66,11 @@ class FrequentistCalculator(Calculator):
                     result["nll"][p][i] = config.pll(loss, param_, val_)
 
             if toprint:
-                # deps = models[0].get_dependents()
-                # for d in deps:
-                #     print(d.name, " :", zfit.run(d))
-                # print(zfit.run(g_param), bf)
-                print("{0} toys generated, fitted and scanned!".format(i))
+                print("{0} toys generated, fitted and scanned!".format(i+1))
+
+            if i > ntoys:
+                break
+            i += 1
 
         return result
 
@@ -101,18 +98,18 @@ class FrequentistCalculator(Calculator):
 
             toeval = [p]
             if p.value != 0:
-                p_ = POI(p.name, 0.0)
+                p_ = POI(p.parameter, 0.0)
                 toeval.append(p_)
 
             toyresult = self.dotoys(p, ntoys, toeval)
 
             self._toysresults[p] = toyresult
 
-    def dotoys_alt(self, poigen, poinull):
+    def dotoys_alt(self, poialt, poinull):
 
         ntoys = self.ntoysalt
 
-        for p in poigen:
+        for p in poialt:
 
             if p in self._toysresults.keys():
                 continue
@@ -123,7 +120,7 @@ class FrequentistCalculator(Calculator):
             for p_ in poinull:
                 toeval.append(p_)
             if 0. not in poinull.value:
-                p_ = POI(poinull.name, 0.0)
+                p_ = POI(poinull.parameter, 0.0)
                 toeval.append(p_)
 
             toyresult = self.dotoys(p, ntoys, toeval)
