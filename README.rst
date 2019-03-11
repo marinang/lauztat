@@ -1,4 +1,4 @@
-statnight 🚧
+lauzstat 🚧
 ^^^^^^^^^^^
 
 Pure python statistics tools for high energy physics.
