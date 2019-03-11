@@ -8,7 +8,7 @@ trigger:
 
 jobs:
 
-- job: 'Test'
+- job: 'Test_Ubuntu'
   pool:
     vmImage: 'Ubuntu-16.04'
   strategy:
@@ -21,3 +21,31 @@ jobs:
 
   steps:
     - template: .ci/azure_steps.yml
+
+- job: 'Test_Windows'
+  pool:
+    vmImage: 'vs2017-win2016'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+    maxParallel: 4
+
+  steps:
+    - template: .ci/azure-steps.yml
+
+- job: 'Test_macOS'
+  pool:
+    vmImage: 'macOS-10.13'
+  strategy:
+    matrix:
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+    maxParallel: 4
+
+  steps:
+    - template: .ci/azure-steps.yml

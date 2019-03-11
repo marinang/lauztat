@@ -7,6 +7,9 @@ Pure python statistics tools for high energy physics.
 .. image:: https://travis-ci.org/marinang/lauztat.svg?branch=master
     :target: https://travis-ci.org/marinang/lauztat
 
+.. image:: https://dev.azure.com/matthieumarinangeli/matthieumarinangeli/_apis/build/status/marinang.lauztat?branchName=master
+    :alt: Build Status
+    :target: https://dev.azure.com/matthieumarinangeli/matthieumarinangeli/_build?definitionId=1
 
 .. image:: https://img.shields.io/coveralls/github/marinang/lauztat.svg
     :alt: Coveralls github
