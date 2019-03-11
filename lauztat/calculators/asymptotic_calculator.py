@@ -4,7 +4,7 @@
 from .calculator import Calculator, qdist
 from scipy.stats import norm
 import numpy as np
-from ..utils.stats import integrate1d
+# from ..utils.stats import integrate1d
 from ..parameters import POI
 
 
@@ -188,7 +188,8 @@ def generate_asymov_dataset(model, params, bounds, nbins=100):
         for p in model.parameters[1:]:
             args.append(params[p])
         args = tuple(args)
-        ret = integrate1d(model, (bin_low, bin_high), 100, *args)
+        # ret = integrate1d(model, (bin_low, bin_high), 100, *args)
+        ret = None
 
         return ret
 
