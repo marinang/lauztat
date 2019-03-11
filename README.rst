@@ -4,13 +4,13 @@ lauzstat 🚧
 Pure python statistics tools for high energy physics.
 
 
-.. image:: https://travis-ci.org/marinang/statnight.svg?branch=master
-    :target: https://travis-ci.org/marinang/statnight
+.. image:: https://travis-ci.org/marinang/lauztat.svg?branch=master
+    :target: https://travis-ci.org/marinang/lauztat
 
 
-.. image:: https://img.shields.io/coveralls/github/marinang/statnight.svg
+.. image:: https://img.shields.io/coveralls/github/marinang/lauztat.svg
     :alt: Coveralls github
-    :target: https://coveralls.io/github/marinang/statnight?branch=master
+    :target: https://coveralls.io/github/marinang/lauztat?branch=master
 
 WIP! Waiting for standard API in HEP! See discussions at `PyHEP gitter channel <https://gitter.im/HSF/PyHEP>`_.
 
