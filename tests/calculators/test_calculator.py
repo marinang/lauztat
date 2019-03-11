@@ -1,9 +1,9 @@
 #!/usr/bin/python
 import pytest
 
-from statnight.calculators.calculator import Calculator
-from statnight.config import Config
-from statnight.parameters import POI
+from lauztat.calculators.calculator import Calculator
+from lauztat.config import Config
+from lauztat.parameters import POI
 import numpy as np
 
 
@@ -43,12 +43,12 @@ def test_with_zfit():
     calc.obsbestfit
     assert calc.obsbestfit == config.bestfit
 
-    mean_poi = POI(mean, [1.1, 1.2, 1.3])
+    mean_poi = POI(mean, [1.15, 1.2, 1.25])
     mean_nll = calc.obs_nll(mean_poi)
 
     assert mean_nll[0] >= mean_nll[1]
     assert mean_nll[2] >= mean_nll[1]
 
     assert calc.obs_nll(mean_poi[0]) == mean_nll[0]
-    assert calc.obs_nll(mean_poi[1]) == mean_nll[2]
-    assert calc.obs_nll(mean_poi[1]) == mean_nll[2]
+    assert calc.obs_nll(mean_poi[1]) == mean_nll[1]
+    assert calc.obs_nll(mean_poi[2]) == mean_nll[2]

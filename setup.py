@@ -20,7 +20,7 @@ if major < 3 or (major == 3 and minor <= 4):
     ir += ["ipython<6.0", "ipykernel<5.0.0", "jupyter-console<=5.0.0"]
     tr += ["jupyter_client"]
 
-setup(name="statnight",
+setup(name="lauztat",
       version="1.0",
       packages=find_packages(exclude=["tests"]),
       scripts=[],

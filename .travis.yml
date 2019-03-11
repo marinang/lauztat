@@ -25,6 +25,6 @@ install:
 
 script:
   - pip install "git+https://github.com/zfit/zfit.git@develop"
-  - coverage run --source=statnight setup.py test
+  - coverage run --source=lauztat setup.py test
 
 after_success: coveralls

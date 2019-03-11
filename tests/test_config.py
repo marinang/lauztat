@@ -1,5 +1,5 @@
 import pytest
-from statnight.config import Config
+from lauztat.config import Config
 import numpy as np
 
 
@@ -27,8 +27,8 @@ def test_with_zfit():
 
     bf = config.bestfit
 
-    assert bf.params[mean]["value"] == pytest.approx(1.2, 0.01)
-    assert bf.params[sigma]["value"] == pytest.approx(0.1, 0.01)
+    assert bf.params[mean]["value"] == pytest.approx(1.2, abs=0.01)
+    assert bf.params[sigma]["value"] == pytest.approx(0.1, abs=0.01)
 
     # test sampling
 
