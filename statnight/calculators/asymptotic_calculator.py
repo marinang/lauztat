@@ -5,7 +5,7 @@ from .calculator import Calculator, qdist
 from scipy.stats import norm
 import numpy as np
 from ..utils.stats import integrate1d
-from ..parameters import Constant, POI
+from ..parameters import POI
 
 
 class AsymptoticCalculator(Calculator):
@@ -34,7 +34,7 @@ class AsymptoticCalculator(Calculator):
             for m in self.config.models:
                 model = m.copy()
                 model.rm_vars(poi.name)
-                model.add_vars(Constant(poi.name, poi.value))
+                # model.add_vars(Constant(poi.name, poi.value))
                 models.append(model)
 
             datasets = self.config.datasets
