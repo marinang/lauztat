@@ -38,7 +38,7 @@ setup(  name = "statnight",
 	test_suite = "tests",
 	install_requires = ir,
 	setup_requires = ["pytest-runner"],
-    dependency_links=['https://github.com/zfit/zfit/tree/develop#egg=zfit-1.0'],
+    dependency_links=['https://github.com/zfit/zfit/tarball/develop#egg=zfit-1.0'],
 	tests_require = tr,
 	classifiers = [
 			"Intended Audience :: Science/Research",
