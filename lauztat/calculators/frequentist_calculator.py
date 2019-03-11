@@ -124,7 +124,7 @@ class FrequentistCalculator(Calculator):
                     # if j = 'bestfit' , o in ['values', 'nll']
                     # if j = 'nll', o = poival
                     if not isinstance(o, str):
-                        o = str(o)
+                        o = str(o.value)
                     f[poigenv][j].create_dataset(o, data=p)
 
         print("Toys successfully saved to '{0}' !".format(filename))
@@ -320,16 +320,6 @@ class FrequentistCalculator(Calculator):
                 frac = norm.cdf(ns)*100
                 ps[ns]["p_clsb"][i] = np.percentile(p_clsb_i, frac)
                 ps[ns]["p_clb"][i] = np.percentile(p_clb_i, frac)
-
-            # print(p)
-            # plt.hist(p_clsb_i, bins=50, range=(0, 1), density=True)
-            # for ns in nsigma:
-            #     plt.axvline(ps[ns]["p_clsb"][i])
-            # plt.show()
-            # plt.hist(p_clb_i, bins=50, range=(0, 1), density=True)
-            # for ns in nsigma:
-            #     plt.axvline(ps[ns]["p_clb"][i])
-            # plt.show()
 
         ret = []
         for ns in nsigma:

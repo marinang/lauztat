@@ -6,7 +6,7 @@ def profileLikelihood(minimizer, loss, var, value):
     return minimum.fmin
 
 
-def base_sampler(models, floatting_params=None, n=None, *args, **kwargs):
+def base_sampler(models, floatting_params=None, *args, **kwargs):
     if floatting_params:
         floatting_params = [f.name for f in floatting_params]
 
@@ -22,7 +22,7 @@ def base_sampler(models, floatting_params=None, n=None, *args, **kwargs):
         fixed_params.append(fixed)
 
     for m, p in zip(models, fixed_params):
-        n_ = n
+        n_ = kwargs.get("n", None)
         if n_ is None:
             if m.is_extended:
                 n_ = "extended"
@@ -34,7 +34,7 @@ def base_sampler(models, floatting_params=None, n=None, *args, **kwargs):
 
 def base_sample(sampler, ntoys, param=None, value=None, *args, **kwargs):
     for i in range(ntoys):
-        if param and value:
+        if not (param is None or value is None):
             with param.set_value(value):
                 for s in sampler:
                     s.resample()
