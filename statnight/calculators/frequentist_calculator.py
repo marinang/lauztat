@@ -5,6 +5,9 @@ from ..parameters import POI
 import numpy as np
 from scipy.stats import norm
 from scipy.interpolate import InterpolatedUnivariateSpline
+import h5py
+np.warnings.filterwarnings('ignore')
+import matplotlib.pyplot as plt
 
 
 class FrequentistCalculator(Calculator):
@@ -24,15 +27,28 @@ class FrequentistCalculator(Calculator):
         self.ntoysnull = ntoysnull
         self.ntoysalt = ntoysalt
 
-    def dotoys(self, poigen, ntoys, poieval, printfreq=0.2):
+        self.sampler = {}
+        self.loss_toys = {}
 
+    def dotoys(self, poigen, ntoys, poieval, printfreq=0.2):
         config = self.config
         models = config.models
-        minimizer = config.minimizer.copy()
         weights = config.weights
-        minimizer.verbosity = 0
+        minimizer = config.minimizer
         g_param = poigen.parameter
         g_value = poigen.value
+
+        try:
+            sampler = self.sampler[g_param]
+        except KeyError:
+            sampler = self.config.sampler(floatting_params=[g_param])
+            self.sampler[g_param] = sampler
+
+        try:
+            loss_toys = self.loss_toys[g_param]
+        except KeyError:
+            loss_toys = self.config.lossbuilder(models, sampler, weights)
+            self.loss_toys[g_param] = loss_toys
 
         result = {"bestfit": {"values": np.empty(ntoys),
                               "nll": np.empty(ntoys)}}
@@ -42,31 +58,40 @@ class FrequentistCalculator(Calculator):
 
         printfreq = ntoys * printfreq
 
-        samplers, toys = config.sampler(int(ntoys*1.2), g_param, g_value,
-                                        models)
+        toys = self.config.sample(sampler, int(ntoys*1.2), g_param, g_value)
 
-        loss = config.lossbuilder(models, samplers, weights)
-
-        i = 0
         for i in range(ntoys):
             converged = False
             toprint = i % printfreq == 0
             while converged is False:
-                next(toys)
-                bf = minimizer.minimize(loss=loss)
+                try:
+                    next(toys)
+                except StopIteration:
+                    to_gen = ntoys - i
+                    toys = self.config.sample(sampler, int(to_gen*1.2),
+                                              g_param, g_value)
+                    next(toys)
+
+                bf = minimizer.minimize(loss=loss_toys)
                 converged = bf.converged
+
                 if not converged:
+                    config.deps_tobestfit()
                     continue
+
                 bf = bf.params[g_param]["value"]
                 result["bestfit"]["values"][i] = bf
-                result["bestfit"]["nll"][i] = config.pll(loss, g_param, bf)
+                nll = config.pll(minimizer, loss_toys, g_param, bf)
+                result["bestfit"]["nll"][i] = nll
+
                 for p in poieval:
                     param_ = p.parameter
                     val_ = p.value
-                    result["nll"][p][i] = config.pll(loss, param_, val_)
+                    nll = config.pll(minimizer, loss_toys, param_, val_)
+                    result["nll"][p][i] = nll
 
             if toprint:
-                print("{0} toys generated, fitted and scanned!".format(i+1))
+                print("{0} toys generated, fitted and scanned!".format(i))
 
             if i > ntoys:
                 break
@@ -86,7 +111,51 @@ class FrequentistCalculator(Calculator):
         toyresult = {"bestfit": {"values": bf, "nll": nllbf}, "nll": nlldict}
         self._toysresults[poi] = toyresult
 
-    def dotoys_null(self, poinull):
+    def toys_to_hdf5(self, filename):
+        f = h5py.File(filename, "w")
+
+        for k, v in self._toysresults.items():
+            # k = POI("name", poivalue)
+            poigenv = str(k.value)
+            f.create_group(poigenv)
+            for j, l in v.items():
+                # j in ['bestfit', 'nll']
+                f[poigenv].create_group(j)
+                for o, p in l.items():
+                    # if j = 'bestfit' , o in ['values', 'nll']
+                    # if j = 'nll', o = poival
+                    if not isinstance(o, str):
+                        o = str(o)
+                    f[poigenv][j].create_dataset(o, data=p)
+
+        print("Toys successfully saved to '{0}' !".format(filename))
+
+    def readtoys_from_hdf5(self, parameter, filename):
+        toys = {}
+        f = h5py.File(filename, "r")
+
+        for k, v in f.items():
+            # k = poigen
+            if isinstance(k, str):
+                k = float(k)
+            k_ = {}
+            toys[POI(parameter, float(k))] = k_
+            for j, l in v.items():
+                # j in ['bestfit', 'nll']
+                j_ = {}
+                k_[j] = j_
+                for o, p in l.items():
+                    if isinstance(o, str) and j == "nll":
+                        o = POI(parameter, float(o))
+                    j_[o] = np.asarray(p)
+                    # if j = 'bestfit' , o in ['values', 'nll']
+                    # if j = 'nll', o = poival
+
+        f.close()
+        self._toysresults = toys
+        print("Toys successfully read from '{0}' !".format(filename))
+
+    def dotoys_null(self, poinull, poialt, qtilde=False):
 
         ntoys = self.ntoysnull
 
@@ -97,15 +166,19 @@ class FrequentistCalculator(Calculator):
             print(msg.format(p))
 
             toeval = [p]
-            if p.value != 0:
-                p_ = POI(p.parameter, 0.0)
-                toeval.append(p_)
+            if poialt is not None:
+                for palt in poialt:
+                    toeval.append(palt)
+            if qtilde:
+                poi0 = POI(poinull.parameter, 0.)
+                if poi0 not in toeval:
+                    toeval.append(poi0)
 
             toyresult = self.dotoys(p, ntoys, toeval)
 
             self._toysresults[p] = toyresult
 
-    def dotoys_alt(self, poialt, poinull):
+    def dotoys_alt(self, poialt, poinull, qtilde=False):
 
         ntoys = self.ntoysalt
 
@@ -117,11 +190,13 @@ class FrequentistCalculator(Calculator):
             print(msg.format(p))
 
             toeval = [p]
-            for p_ in poinull:
-                toeval.append(p_)
-            if 0. not in poinull.value:
-                p_ = POI(poinull.parameter, 0.0)
-                toeval.append(p_)
+            if poinull is not None:
+                for p_ in poinull:
+                    toeval.append(p_)
+            if qtilde:
+                poi0 = POI(poinull.parameter, 0.)
+                if poi0 not in toeval:
+                    toeval.append(poi0)
 
             toyresult = self.dotoys(p, ntoys, toeval)
 
@@ -161,15 +236,16 @@ class FrequentistCalculator(Calculator):
                  onesideddiscovery=False):
 
         def pvalue_i(qdist, qobs):
-            p = len(qdist[qdist > qobs])/len(qdist)
+            qdist = qdist[~(np.isnan(qdist) | np.isinf(qdist))]
+            p = len(qdist[qdist >= qobs])/len(qdist)
             return p
 
-        self.dotoys_null(poinull)
+        self.dotoys_null(poinull, poialt, qtilde)
 
         needpalt = not(onesided and poialt is None)
 
         if needpalt:
-            self.dotoys_alt(poialt, poinull)
+            self.dotoys_alt(poialt, poinull, qtilde)
 
         pnull = np.empty(len(poinull))
         if needpalt:
@@ -211,7 +287,8 @@ class FrequentistCalculator(Calculator):
         return self.pvalue_q(qobs, poinull, poialt, qtilde, onesided,
                              onesideddiscovery)
 
-    def expected_pvalue(self, poinull, poialt, nsigma, CLs=True):
+    def expected_pvalue(self, poinull, poialt, nsigma, CLs=True, qtilde=False,
+                        onesided=True, onesideddiscovery=False):
 
         ps = {ns: {"p_clsb": np.empty(len(poinull)),
                    "p_clb": np.empty(len(poinull))} for ns in nsigma}
@@ -219,7 +296,16 @@ class FrequentistCalculator(Calculator):
         for i, p in enumerate(poinull):
 
             qnulldist = self.qnull(p)
+            bestfitnull = self.poi_bestfit(p, qtilde)
+            qnulldist = qdist(qnulldist, bestfitnull, p.value, onesided,
+                              onesideddiscovery)
+            qnulldist = qnulldist[~(np.isnan(qnulldist) | np.isinf(qnulldist))]
+
             qaltdist = self.qalt(p, poialt)
+            bestfitalt = self.poi_bestfit(poialt, qtilde)
+            qaltdist = qdist(qaltdist, bestfitalt, p.value, onesided,
+                             onesideddiscovery)
+            qaltdist = qaltdist[~(np.isnan(qaltdist) | np.isinf(qaltdist))]
 
             p_clsb_i = np.empty(qnulldist.shape)
             p_clb_i = np.empty(qaltdist.shape)
@@ -228,15 +314,23 @@ class FrequentistCalculator(Calculator):
             lqaltdist = len(qaltdist)
 
             for j, q in np.ndenumerate(qaltdist):
-
-                if j[0] < lqnulldist:
-                    p_clsb_i[j] = (len(qnulldist[qnulldist >= q])/lqnulldist)
+                p_clsb_i[j] = (len(qnulldist[qnulldist >= q])/lqnulldist)
                 p_clb_i[j] = (len(qaltdist[qaltdist >= q])/lqaltdist)
 
             for ns in nsigma:
                 frac = norm.cdf(ns)*100
                 ps[ns]["p_clsb"][i] = np.percentile(p_clsb_i, frac)
                 ps[ns]["p_clb"][i] = np.percentile(p_clb_i, frac)
+
+            # print(p)
+            # plt.hist(p_clsb_i, bins=50, range=(0, 1), density=True)
+            # for ns in nsigma:
+            #     plt.axvline(ps[ns]["p_clsb"][i])
+            # plt.show()
+            # plt.hist(p_clb_i, bins=50, range=(0, 1), density=True)
+            # for ns in nsigma:
+            #     plt.axvline(ps[ns]["p_clb"][i])
+            # plt.show()
 
         ret = []
         for ns in nsigma:
@@ -249,46 +343,63 @@ class FrequentistCalculator(Calculator):
 
         return ret
 
-    def expected_poi(self, poinull, poialt, nsigma, alpha=0.05, qtilde=False,
-                     onesided=True, onesideddiscovery=False):
-
-        qt = qtilde
-        os = onesided
-        osd = onesideddiscovery
-
-        bf = self.poi_bestfit(poialt, qtilde)
-        nll_bf_alt = self.nll_bestfit(poialt, qtilde)
-
-        q = {p: self.q(self.nll(poialt, p), nll_bf_alt) for p in poinull}
-        q = {p: qdist(q[p], bf, p.value, True, False) for p in poinull}
-
-        def getqi(i):
-            qi = np.empty(len(poinull))
-            for j, p in enumerate(poinull):
-                qi[j] = q[p][i]
-            return qi
-
-        values = []
-
-        for i in range(len(bf)):
-            qi = getqi(i)
-            pvalues, _ = self.pvalue_q(qi, poinull, poialt, qt, os, osd)
-            pvalues = pvalues - alpha
-
-            s = InterpolatedUnivariateSpline(poinull.value, pvalues)
-            val = s.roots()
-
-            if len(val) > 0:
-                values.append(val[0])
-
-        values = np.array(values)
-
-        ret = []
-        for ns in nsigma:
-            frac = norm.cdf(ns)*100
-            ret.append(np.percentile(values, frac))
-
-        return ret
+    # def expected_poi(self, poinull, poialt, nsigma, alpha=0.05, CLs=True,
+    #                  qtilde=False, onesided=True, onesideddiscovery=False):
+    #
+    #     qt = qtilde
+    #     os = onesided
+    #     osd = onesideddiscovery
+    #
+    #     bf = self.poi_bestfit(poialt, qtilde)
+    #     nll_bf_alt = self.nll_bestfit(poialt, qtilde)
+    #
+    #     q = {}
+    #     for p in poinull:
+    #         q_ = self.q(self.nll(poialt, p), nll_bf_alt)
+    #         sel = ~(np.isnan(q_) | np.isinf(q_))
+    #         q_ = q_[sel]
+    #         bf_ = bf[sel]
+    #         q_ = qdist(q_, bf_, p.value, True, False)
+    #         q[p] = q_
+    #
+    #     # q = {p: self.q(self.nll(poialt, p), nll_bf_alt) for p in poinull}
+    #     # q = {p: qdist(q[p], bf, p.value, True, False) for p in poinull}
+    #     # q = {p: q[p][] for p in poinull}
+    #     # z[~(np.isnan(z) | np.isinf(z))]
+    #
+    #     def getqi(i):
+    #         qi = np.empty(len(poinull))
+    #         for j, p in enumerate(poinull):
+    #             qi[j] = q[p][i]
+    #         return qi
+    #
+    #     values = []
+    #
+    #     for i in range(len(bf)):
+    #         qi = getqi(i)
+    #         pnull, palt = self.pvalue_q(qi, poinull, poialt, qt, os, osd)
+    #
+    #         if CLs:
+    #             pvalues = pnull / palt
+    #         else:
+    #             pvalues = pnull
+    #
+    #         pvalues = pvalues - alpha
+    #
+    #         s = InterpolatedUnivariateSpline(poinull.value, pvalues)
+    #         val = s.roots()
+    #
+    #         if len(val) > 0:
+    #             values.append(val[0])
+    #
+    #     values = np.array(values)
+    #
+    #     ret = []
+    #     for ns in nsigma:
+    #         frac = norm.cdf(ns)*100
+    #         ret.append(np.percentile(values, frac))
+    #
+    #     return ret
 
 
 def gentoys(models, ntoys, nsamples=None, **kwargs):

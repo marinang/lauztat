@@ -7,7 +7,7 @@ Parameter classes
 from iminuit import describe
 import attr
 from attr import attrs, attrib
-from math import pi, sqrt, exp, log
+# from math import pi, sqrt, exp, log
 import numpy as np
 
 
@@ -122,157 +122,157 @@ class Space(Named, Range):
         return "Observable('{0}', range={1})".format(self.name, self.range)
 
 
-@attrs(repr=False, slots=True)
-class Constant(Named):
-    """
-    Class for constant parameters:
-        **Arguments:**
-            - **name** a string
-            - **value** a number (int/float)
-        **Example:**
-            const = Constant(name="mu", value="1.2")
-    """
-
-    value = attr.ib(type=(int, float),
-                    validator=attr.validators.instance_of((int, float)))
-
-    def tominuit(self):
-        """
-        Returns a dictionnary of parameters for iminuit.
-        """
-        ret = {}
-        ret[self.name] = self.value
-        ret["fix_{0}".format(self.name)] = True
-        return ret
-
-    def todict(self):
-        dict = attr.asdict(self)
-        dict["type"] = "statnight.parameters.Constant"
-        return dict
-
-    def __repr__(self):
-        return "Constant('{0}', value={1})".format(self.name, self.value)
-
-
-@attrs(repr=False, slots=True)
-class Variable(Named, Range):
-    """
-    Class for variable parameters.
-        **Arguments:**
-            - **name** a string
-            - **value** a tuple with lower and upper limits of the range
-            - **initvalue** (optionnal). a number (int/float) inside the range
-            - **initstep** (optionnal). a number (int/float) lower than the
-            range size
-        **Examples:**
-            var = (name="sigma", range=(0, 5))
-            var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
-    """
-
-    initvalue = attr.ib(type=(int, float),
-                        validator=[attr.validators.instance_of((int, float)),
-                                   check_initvalue],
-                        default=-1.)
-    initstep = attr.ib(type=(int, float),
-                       validator=[attr.validators.instance_of((int, float)),
-                                  check_initstep],
-                       default=-1.)
-    isyield = attr.ib(type=(bool),
-                      validator=attr.validators.instance_of(bool),
-                      default=False)
-
-    def __attrs_post_init__(self):
-        if self.initvalue == -1:
-            self.initvalue = self.range[0] + (self.range[1] - self.range[0])/2.
-        if self.initstep == -1:
-            self.initstep = (self.range[1] - self.range[0])/100.
-
-    def tominuit(self):
-        """
-        Returns a dictionnary of parameters for iminuit.
-        """
-        ret = {}
-        ret[self.name] = self.initvalue
-        ret["limit_{0}".format(self.name)] = self.range
-        ret["error_{0}".format(self.name)] = self.initstep
-        return ret
-
-    def __repr__(self):
-        rep = "Variable('{0}', initvalue={1}, range={2}, initstep={3})"
-        rep = rep.format(self.name, self.initvalue, self.range, self.initstep)
-        return rep
-
-    def todict(self):
-        dict = attr.asdict(self)
-        dict["type"] = "statnight.parameters.Variable"
-        return dict
+# @attrs(repr=False, slots=True)
+# class Constant(Named):
+#     """
+#     Class for constant parameters:
+#         **Arguments:**
+#             - **name** a string
+#             - **value** a number (int/float)
+#         **Example:**
+#             const = Constant(name="mu", value="1.2")
+#     """
+#
+#     value = attr.ib(type=(int, float),
+#                     validator=attr.validators.instance_of((int, float)))
+#
+#     def tominuit(self):
+#         """
+#         Returns a dictionnary of parameters for iminuit.
+#         """
+#         ret = {}
+#         ret[self.name] = self.value
+#         ret["fix_{0}".format(self.name)] = True
+#         return ret
+#
+#     def todict(self):
+#         dict = attr.asdict(self)
+#         dict["type"] = "statnight.parameters.Constant"
+#         return dict
+#
+#     def __repr__(self):
+#         return "Constant('{0}', value={1})".format(self.name, self.value)
 
 
-@attrs(repr=False, slots=True)
-class GaussianConstrained(Named, Range):
-    """
-    Class for gaussian constrained parameters.
-        **Arguments:**
-            - **name** a string
-            - **value** a tuple with lower and upper limits of the range
-            - **mu** a number (int/float). Mean value of the gaussian.
-            - **sigma** a number > 0 (int/float). Sigma of the gaussian.
-            - **initstep** (optionnal). a number (int/float) lower than the
-            range size
-    """
+# @attrs(repr=False, slots=True)
+# class Variable(Named, Range):
+#     """
+#     Class for variable parameters.
+#         **Arguments:**
+#             - **name** a string
+#             - **value** a tuple with lower and upper limits of the range
+#             - **initvalue** (optionnal). a number (int/float) inside the range
+#             - **initstep** (optionnal). a number (int/float) lower than the
+#             range size
+#         **Examples:**
+#             var = (name="sigma", range=(0, 5))
+#             var = (name="sigma", range=(0, 5), initvalue=2.5, initstep=0.1)
+#     """
+#
+#     initvalue = attr.ib(type=(int, float),
+#                         validator=[attr.validators.instance_of((int, float)),
+#                                    check_initvalue],
+#                         default=-1.)
+#     initstep = attr.ib(type=(int, float),
+#                        validator=[attr.validators.instance_of((int, float)),
+#                                   check_initstep],
+#                        default=-1.)
+#     isyield = attr.ib(type=(bool),
+#                       validator=attr.validators.instance_of(bool),
+#                       default=False)
+#
+#     def __attrs_post_init__(self):
+#         if self.initvalue == -1:
+#             self.initvalue = self.range[0] + (self.range[1] - self.range[0])/2.
+#         if self.initstep == -1:
+#             self.initstep = (self.range[1] - self.range[0])/100.
+#
+#     def tominuit(self):
+#         """
+#         Returns a dictionnary of parameters for iminuit.
+#         """
+#         ret = {}
+#         ret[self.name] = self.initvalue
+#         ret["limit_{0}".format(self.name)] = self.range
+#         ret["error_{0}".format(self.name)] = self.initstep
+#         return ret
+#
+#     def __repr__(self):
+#         rep = "Variable('{0}', initvalue={1}, range={2}, initstep={3})"
+#         rep = rep.format(self.name, self.initvalue, self.range, self.initstep)
+#         return rep
+#
+#     def todict(self):
+#         dict = attr.asdict(self)
+#         dict["type"] = "statnight.parameters.Variable"
+#         return dict
 
-    mu = attr.ib(type=(int, float),
-                 validator=[attr.validators.instance_of((int, float))],
-                 kw_only=True)
-    sigma = attr.ib(type=(int, float),
-                    validator=[attr.validators.instance_of((int, float)),
-                               check_pos],
-                    kw_only=True)
-    initstep = attr.ib(type=(int, float),
-                       validator=[attr.validators.instance_of((int, float)),
-                                  check_initstep], default=-1., kw_only=True)
 
-    def __attrs_post_init__(self):
-        if self.initstep == -1:
-            self.initstep = (self.range[1] - self.range[0])/100.
-
-    def tominuit(self):
-        """
-        Returns a dictionnary of parameters for iminuit.
-        """
-        ret = {}
-        ret[self.name] = self.mu
-        ret["limit_{0}".format(self.name)] = self.range
-        ret["error_{0}".format(self.name)] = self.initstep
-        return ret
-
-    def todict(self):
-        dict = attr.asdict(self)
-        dict["type"] = "statnight.parameters.GaussianConstrained"
-        return dict
-
-    def evalconstraint(self, param):
-        if self.sigma < 1e-10:
-            ret = 1e-300
-        else:
-            d = (param-self.mu)/self.sigma
-            d2 = d*d
-            ret = 1/(sqrt(2*pi)*self.sigma)*exp(-0.5*d2)
-
-        return ret
-
-    def log_evalconstraint(self, param):
-        ret = log(1 / (self.sigma * sqrt(2*pi)))
-        ret += -0.5 * ((param - self.mu) / self.sigma)**2
-        return ret
-
-    def __repr__(self):
-        rep = "GaussianConstrained('{0}', mu={1}, sigma={2}, range={3},"
-        rep += " initstep={4})"
-        rep = rep.format(self.name, self.mu, self.sigma, self.range,
-                         self.initstep)
-
-        return rep
+# @attrs(repr=False, slots=True)
+# class GaussianConstrained(Named, Range):
+#     """
+#     Class for gaussian constrained parameters.
+#         **Arguments:**
+#             - **name** a string
+#             - **value** a tuple with lower and upper limits of the range
+#             - **mu** a number (int/float). Mean value of the gaussian.
+#             - **sigma** a number > 0 (int/float). Sigma of the gaussian.
+#             - **initstep** (optionnal). a number (int/float) lower than the
+#             range size
+#     """
+#
+#     mu = attr.ib(type=(int, float),
+#                  validator=[attr.validators.instance_of((int, float))],
+#                  kw_only=True)
+#     sigma = attr.ib(type=(int, float),
+#                     validator=[attr.validators.instance_of((int, float)),
+#                                check_pos],
+#                     kw_only=True)
+#     initstep = attr.ib(type=(int, float),
+#                        validator=[attr.validators.instance_of((int, float)),
+#                                   check_initstep], default=-1., kw_only=True)
+#
+#     def __attrs_post_init__(self):
+#         if self.initstep == -1:
+#             self.initstep = (self.range[1] - self.range[0])/100.
+#
+#     def tominuit(self):
+#         """
+#         Returns a dictionnary of parameters for iminuit.
+#         """
+#         ret = {}
+#         ret[self.name] = self.mu
+#         ret["limit_{0}".format(self.name)] = self.range
+#         ret["error_{0}".format(self.name)] = self.initstep
+#         return ret
+#
+#     def todict(self):
+#         dict = attr.asdict(self)
+#         dict["type"] = "statnight.parameters.GaussianConstrained"
+#         return dict
+#
+#     def evalconstraint(self, param):
+#         if self.sigma < 1e-10:
+#             ret = 1e-300
+#         else:
+#             d = (param-self.mu)/self.sigma
+#             d2 = d*d
+#             ret = 1/(sqrt(2*pi)*self.sigma)*exp(-0.5*d2)
+#
+#         return ret
+#
+#     def log_evalconstraint(self, param):
+#         ret = log(1 / (self.sigma * sqrt(2*pi)))
+#         ret += -0.5 * ((param - self.mu) / self.sigma)**2
+#         return ret
+#
+#     def __repr__(self):
+#         rep = "GaussianConstrained('{0}', mu={1}, sigma={2}, range={3},"
+#         rep += " initstep={4})"
+#         rep = rep.format(self.name, self.mu, self.sigma, self.range,
+#                          self.initstep)
+#
+#         return rep
 
 
 @attrs(repr=False, slots=True, frozen=True)
@@ -357,6 +357,10 @@ class POI(object):
     """
 
     def __init__(self, parameter, value):
+
+        if not hasattr(parameter, "name"):
+            msg = "Please provide a parameter from zfit from instance."
+            raise TypeError(msg)
 
         self.parameter = parameter
         self.name = parameter.name

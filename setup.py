@@ -9,7 +9,7 @@ from setuptools import setup
 major, minor = sys.version_info[:2]
 
 tr = ["pytest", "jupyter", "papermill", "jsonschema==2.6.0"]
-tr += ["jupyter_client"]
+tr += ["jupyter_client", "zfit"]
 ir = ["iminuit", "numpy", "scipy", "attrs>=18.2.0"]
 
 if major >= 3 and minor >= 5:
@@ -38,6 +38,7 @@ setup(  name = "statnight",
 	test_suite = "tests",
 	install_requires = ir,
 	setup_requires = ["pytest-runner"],
+    dependency_links=['https://github.com/zfit/zfit/tree/develop#egg=zfit-1.0'],
 	tests_require = tr,
 	classifiers = [
 			"Intended Audience :: Science/Research",

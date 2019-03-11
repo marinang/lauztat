@@ -2,7 +2,8 @@ from .hypotest import HypoTest
 from scipy.interpolate import InterpolatedUnivariateSpline
 import matplotlib.pyplot as plt
 from ..parameters import POI
-from ..calculators import AsymptoticCalculator, FrequentistCalculator
+from ..calculators import AsymptoticCalculator
+# FrequentistCalculator
 
 
 class UpperLimit(HypoTest):
@@ -93,64 +94,74 @@ class UpperLimit(HypoTest):
         poiname = poinull.name
         poiparam = poinull.parameter
 
-        if self.CLs:
-            p_ = pvalues["cls"]
-        else:
-            p_ = pvalues["clsb"]
-
         bestfitpoi = self.calculator.config.bestfit.params[poiparam]["value"]
-
         sel = poivalues > bestfitpoi
-        poivalues = poivalues[sel]
-        p_ = p_[sel] - self.alpha
 
-        s = InterpolatedUnivariateSpline(poivalues, p_)
-        val = s.roots()
-
-        if len(val) > 0:
-            poiul = val[0]
+        if self.CLs:
+            k = "cls"
         else:
-            raise NotImplementedError
-        poiul = POI(poiparam, poiul)
+            k = "clsb"
 
-        sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
-        exp_poi = self.calculator.expected_poi
+        keys = [k, "exp", "exp_p1", "exp_m1", "exp_p2", "exp_m2"]
+        values = {}
+        for k_ in keys:
+            p_ = pvalues[k_]
+            pvals = poivalues
+            if k_ not in ["exp_m1", "exp_m2"]:
+                p_ = p_[sel]
+                pvals = pvals[sel]
+            p_ = p_ - self.alpha
 
-        if isinstance(self.calculator, AsymptoticCalculator):
-            kwargs = dict(poinull=poiul, poialt=self.poialt, nsigma=sigmas,
-                          alpha=self.alpha, CLs=self.CLs)
-        elif isinstance(self.calculator, FrequentistCalculator):
-            kwargs = dict(poinull=self.poinull, poialt=self.poialt,
-                          nsigma=sigmas, alpha=self.alpha, qtilde=self.qtilde,
-                          onesided=True, onesideddiscovery=False)
+            s = InterpolatedUnivariateSpline(pvals, p_)
+            val = s.roots()
 
-        results = exp_poi(**kwargs)
+            if len(val) > 0:
+                poiul = val[0]
+            else:
+                raise NotImplementedError
+            if k_ == k:
+                k_ = "observed"
 
-        bands = {}
-        bands["median"] = results[0]
-        bands["band_p1"] = results[1]
-        bands["band_p2"] = results[2]
-        bands["band_m1"] = results[3]
-        bands["band_m2"] = results[4]
+            values[k_] = poiul
+
+        # poiul = POI(poiparam, poiul)
+        #
+        # sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
+        # exp_poi = self.calculator.expected_poi
+        #
+        # if isinstance(self.calculator, AsymptoticCalculator):
+        #     kwargs = dict(poinull=poiul, poialt=self.poialt, nsigma=sigmas,
+        #                   alpha=self.alpha, CLs=self.CLs)
+        # elif isinstance(self.calculator, FrequentistCalculator):
+        #     kwargs = dict(poinull=self.poinull, poialt=self.poialt,
+        #                   nsigma=sigmas, alpha=self.alpha, qtilde=self.qtilde,
+        #                   onesided=True, onesideddiscovery=False)
+
+        # results = exp_poi(**kwargs)
+
+        # bands = {}
+        # bands["median"] = results[0]
+        # bands["band_p1"] = results[1]
+        # bands["band_p2"] = results[2]
+        # bands["band_m1"] = results[3]
+        # bands["band_m2"] = results[4]
 
         if printlevel > 0:
 
             msg = "\nObserved upper limit: {0} = {1}"
-            print(msg.format(poiname, poiul.value))
+            print(msg.format(poiname, values["observed"]))
             msg = "Expected upper limit: {0} = {1}"
-            print(msg.format(poiname, bands["median"]))
+            print(msg.format(poiname, values["exp"]))
             msg = "Expected upper limit +1 sigma: {0} = {1}"
-            print(msg.format(poiname, bands["band_p1"]))
+            print(msg.format(poiname, values["exp_p1"]))
             msg = "Expected upper limit -1 sigma: {0} = {1}"
-            print(msg.format(poiname, bands["band_m1"]))
+            print(msg.format(poiname, values["exp_m1"]))
             msg = "Expected upper limit +2 sigma: {0} = {1}"
-            print(msg.format(poiname, bands["band_p2"]))
+            print(msg.format(poiname, values["exp_p2"]))
             msg = "Expected upper limit -2 sigma: {0} = {1}"
-            print(msg.format(poiname, bands["band_m2"]))
+            print(msg.format(poiname, values["exp_m2"]))
 
-        bands["observed"] = poiul.value
-
-        return bands
+        return values
 
     def plot(self, ax=None, show=True, **kwargs):
         """

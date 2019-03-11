@@ -1,5 +1,4 @@
 from .hypotest import HypoTest
-import numpy as np
 from scipy.interpolate import interp1d
 #import matplotlib.pyplot as plt
 from ..parameters import POI
