@@ -1,12 +1,12 @@
 #!/usr/bin/python
 import pytest
 
-import tensorflow as tf
 import zfit
 from statnight import POI
 import numpy as np
 
 mean = zfit.Parameter("mu", 1.2, 0.1, 2)
+
 
 def test_pois():
 

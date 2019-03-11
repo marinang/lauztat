@@ -5,7 +5,6 @@ import numpy as np
 
 def test_with_zfit():
 
-    import tensorflow as tf
     import zfit
     from zfit.core.loss import UnbinnedNLL
     from zfit.minimizers.minimizer_minuit import MinuitMinimizer
