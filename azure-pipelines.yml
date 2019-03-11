@@ -15,6 +15,7 @@ jobs:
     matrix:
       Python35:
         python.version: '3.5'
+        condition: succeededOrFailed()
       Python36:
         python.version: '3.6'
       Python37:
