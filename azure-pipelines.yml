@@ -34,7 +34,7 @@ jobs:
     maxParallel: 4
 
   steps:
-    - template: .ci/azure-steps.yml
+    - template: .ci/azure_steps.yml
 
 - job: 'Test_macOS'
   pool:
@@ -48,4 +48,4 @@ jobs:
     maxParallel: 4
 
   steps:
-    - template: .ci/azure-steps.yml
+    - template: .ci/azure_steps.yml
