@@ -23,6 +23,7 @@ install:
   - pip install pytest
 
 script:
-  coverage run --source=statnight setup.py test
+  - pip install "git+https://github.com/zfit/zfit.git@develop"
+  - coverage run --source=statnight setup.py test
 
 after_success: coveralls
