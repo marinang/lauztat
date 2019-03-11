@@ -5,6 +5,7 @@ import numpy as np
 
 def test_with_zfit():
 
+    import tensorflow as tf
     import zfit
     from zfit.core.loss import UnbinnedNLL
     from zfit.minimizers.minimizer_minuit import MinuitMinimizer
@@ -29,3 +30,24 @@ def test_with_zfit():
 
     assert bf.params[mean]["value"] == pytest.approx(1.2, 0.01)
     assert bf.params[sigma]["value"] == pytest.approx(0.1, 0.01)
+
+    # test sampling
+
+    sampler = config.sampler(n=len(data))
+    toys = config.sample(sampler, 2)
+    next(toys)
+    toy1 = zfit.run(sampler)
+
+    assert np.mean(toy1) == pytest.approx(1.2, abs=0.01)
+    assert np.std(toy1) == pytest.approx(0.1, abs=0.01)
+
+    next(toys)
+    toy2 = zfit.run(sampler)
+    assert np.mean(toy2) == pytest.approx(1.2, abs=0.01)
+    assert np.std(toy2) == pytest.approx(0.1, abs=0.01)
+
+    assert np.mean(toy1) == pytest.approx(np.mean(toy2), abs=0.01)
+    assert np.std(toy1) == pytest.approx(np.std(toy2), abs=0.01)
+
+    with pytest.raises(StopIteration):
+        next(toys)

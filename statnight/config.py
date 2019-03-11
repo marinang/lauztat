@@ -6,34 +6,42 @@ def profileLikelihood(minimizer, loss, var, value):
     return minimum.fmin
 
 
-def base_sampler(models, floatting_params=None):
-    floatting_params = [f.name for f in floatting_params]
+def base_sampler(models, floatting_params=None, n=None, *args, **kwargs):
+    if floatting_params:
+        floatting_params = [f.name for f in floatting_params]
+
     samplers = []
     fixed_params = []
-
     for m in models:
         def cond(p):
-            return p.name in floatting_params
+            if floatting_params:
+                return p.name in floatting_params
+            else:
+                False
         fixed = [p for p in m.get_dependents() if not cond(p)]
         fixed_params.append(fixed)
 
     for m, p in zip(models, fixed_params):
-        if m.is_extended:
-            n = "extended"
-        else:
-            n = None
-
-        sampler = m.create_sampler(n=n, fixed_params=p)
+        n_ = n
+        if n_ is None:
+            if m.is_extended:
+                n_ = "extended"
+        sampler = m.create_sampler(n=n_, fixed_params=p)
         samplers.append(sampler)
 
     return samplers
 
 
-def base_sample(sampler, ntoys, param, value):
+def base_sample(sampler, ntoys, param=None, value=None, *args, **kwargs):
     for i in range(ntoys):
-        with param.set_value(value):
+        if param and value:
+            with param.set_value(value):
+                for s in sampler:
+                    s.resample()
+        else:
             for s in sampler:
                 s.resample()
+
         yield i
 
 
@@ -70,14 +78,15 @@ class Config(object):
         self._sample = sample_method
         self._bestfit = bestfit
 
-    def sampler(self, floatting_params=None):
+    def sampler(self, floatting_params=None, *args, **kwargs):
 
         if self._sampler is None:
-            return base_sampler(self.models, floatting_params)
+            return base_sampler(self.models, floatting_params, *args, **kwargs)
         else:
-            return self._sampler(self.models, floatting_params)
+            return self._sampler(self.models, floatting_params,
+                                 *args, **kwargs)
 
-    def sample(self, sampler, ntoys, param, value):
+    def sample(self, sampler, ntoys, param=None, value=None):
 
         if self._sample is None:
             return base_sample(sampler, ntoys, param, value)
