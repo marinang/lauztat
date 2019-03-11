@@ -4,10 +4,8 @@
 Parameter classes
 """
 
-from iminuit import describe
 import attr
 from attr import attrs, attrib
-# from math import pi, sqrt, exp, log
 import numpy as np
 
 
@@ -56,24 +54,24 @@ def check_pos(instance=None, attribute=None, value=None):
         raise ValueError("{0} should be strictly positive.".format(name))
 
 
-def check_constraint(instance=None, constraint=None, value=None):
-    """
-    Validator for comstraint attribute in Variable class.
-    """
-    if value:
-        if hasattr(value, "__call__"):
-            pars = describe(value)
-            if len(pars) > 1:
-                raise TypeError("Please provide a function with of single \
-                argument.")
-
-            test_return = value(0.0)
-            if not isinstance(test_return, (int, float)):
-                raise ValueError("Please provide a function that returns a \
-                number (int/float).")
-        else:
-            raise TypeError("Please provide a function with one argument \
-            returning a number (int/float).")
+# def check_constraint(instance=None, constraint=None, value=None):
+#     """
+#     Validator for comstraint attribute in Variable class.
+#     """
+#     if value:
+#         if hasattr(value, "__call__"):
+#             pars = describe(value)
+#             if len(pars) > 1:
+#                 raise TypeError("Please provide a function with of single \
+#                 argument.")
+#
+#             test_return = value(0.0)
+#             if not isinstance(test_return, (int, float)):
+#                 raise ValueError("Please provide a function that returns a \
+#                 number (int/float).")
+#         else:
+#             raise TypeError("Please provide a function with one argument \
+#             returning a number (int/float).")
 
 # Parameter classes
 
