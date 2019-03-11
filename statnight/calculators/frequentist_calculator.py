@@ -4,10 +4,9 @@ from .calculator import Calculator, qdist
 from ..parameters import POI
 import numpy as np
 from scipy.stats import norm
-from scipy.interpolate import InterpolatedUnivariateSpline
+# from scipy.interpolate import InterpolatedUnivariateSpline
 import h5py
 np.warnings.filterwarnings('ignore')
-import matplotlib.pyplot as plt
 
 
 class FrequentistCalculator(Calculator):
