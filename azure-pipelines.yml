@@ -22,4 +22,4 @@ jobs:
     maxParallel: 4
 
   steps:
-    - template: .ci/azure-steps.yml
+    - template: .ci/azure_steps.yml
