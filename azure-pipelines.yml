@@ -36,16 +36,3 @@ jobs:
   steps:
     - template: .ci/azure_steps.yml
 
-- job: 'Test_macOS'
-  pool:
-    vmImage: 'macOS-10.13'
-  strategy:
-    matrix:
-      Python36:
-        python.version: '3.6'
-      Python37:
-        python.version: '3.7'
-    maxParallel: 4
-
-  steps:
-    - template: .ci/azure_steps.yml
