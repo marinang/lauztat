@@ -11,6 +11,10 @@ Pure python statistics tools for high energy physics.
     :alt: Build Status
     :target: https://dev.azure.com/matthieumarinangeli/matthieumarinangeli/_build?definitionId=1
 
+..https://img.shields.io/azure-devops/tests/matthieumarinangeli/matthieumarinangeli/1.svg?compact_message
+    :alt: Test Status
+    :target: https://dev.azure.com/matthieumarinangeli/matthieumarinangeli/_build?definitionId=1
+
 .. image:: https://img.shields.io/coveralls/github/marinang/lauztat.svg
     :alt: Coveralls github
     :target: https://coveralls.io/github/marinang/lauztat?branch=master
