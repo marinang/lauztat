@@ -12,7 +12,7 @@ def test_constructors():
     with pytest.raises(TypeError):
         FrequentistCalculator()
 
-
+# @pytest.mark.skip()
 def test_with_zfit():
 
     import zfit
