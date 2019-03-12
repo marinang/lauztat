@@ -73,6 +73,6 @@ def test_freq_with_zfit():
     assert result["observed"] == pytest.approx(15.9665, abs=0.01)
     assert result["exp"] == pytest.approx(10.4231, abs=0.01)
     assert result["exp_p1"] == pytest.approx(14.8135, abs=0.01)
-    assert result["exp_p2"] == pytest.approx(20.6654, abs=0.01)
+    assert result["exp_p2"] == pytest.approx(20.6654, abs=0.5)
     assert result["exp_m1"] == pytest.approx(7.2897, abs=0.01)
     assert result["exp_m2"] == pytest.approx(5.3179, abs=0.01)

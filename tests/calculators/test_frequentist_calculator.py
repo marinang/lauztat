@@ -69,7 +69,7 @@ def test_with_zfit():
 
     pnull, palt = calc.pvalue(poinull, poialt)
 
-    assert pnull < 0.05
+    assert 0 < pnull < 0.5
     assert palt == pytest.approx(0.0, abs=0.01)
 
     calc.toys_to_hdf5("toys.hdf5")
