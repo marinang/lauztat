@@ -47,7 +47,6 @@ class AsymptoticCalculator(Calculator):
             with poiparam.set_value(poivalue):
                 poiparam.floating = False
                 asymin = minimizer.minimize(loss=loss)
-                print(poivalue)
                 poiparam.floating = True
 
             minimizer.verbosity = oldverbose

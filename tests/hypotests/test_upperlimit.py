@@ -1,6 +1,6 @@
 import pytest
 
-from lauztat.calculators import FrequentistCalculator
+from lauztat.calculators import FrequentistCalculator, AsymptoticCalculator
 from lauztat.config import Config
 from lauztat.parameters import POI
 from lauztat.hypotests import UpperLimit
@@ -60,19 +60,33 @@ def test_freq_with_zfit():
 
     config = Config(tot_model, data_, lossbuilder, MinuitMinimizer())
 
-    calc = FrequentistCalculator(config, ntoysnull=5000, ntoysalt=5000)
-
-    calc.readtoys_from_hdf5(Nsig, "{0}/toys_UL_Nsig.hdf5".format(pwd))
-
     poinull = POI(Nsig, value=np.linspace(1.0, 25, 15))
     poialt = POI(Nsig, value=0)
-    ul_test = UpperLimit(poinull, poialt, calc, CLs=True, qtilde=False)
 
-    result = ul_test.upperlimit()
+    def test_asy():
+        calc = AsymptoticCalculator(config)
+        ul_test = UpperLimit(poinull, poialt, calc, CLs=True, qtilde=False)
+        return ul_test.upperlimit()
 
-    assert result["observed"] == pytest.approx(15.9665, abs=0.1)
-    assert result["exp"] == pytest.approx(10.4231, abs=0.1)
-    assert result["exp_p1"] == pytest.approx(14.8135, abs=0.1)
-    assert result["exp_p2"] == pytest.approx(20.6654, abs=0.5)
-    assert result["exp_m1"] == pytest.approx(7.2897, abs=0.1)
-    assert result["exp_m2"] == pytest.approx(5.3179, abs=0.1)
+    def test_freq():
+        calc = FrequentistCalculator(config, ntoysnull=5000, ntoysalt=5000)
+        calc.readtoys_from_hdf5(Nsig, "{0}/toys_UL_Nsig.hdf5".format(pwd))
+        ul_test = UpperLimit(poinull, poialt, calc, CLs=True, qtilde=False)
+        return ul_test.upperlimit()
+
+    ra = test_asy()
+    rf = test_freq()
+
+    assert ra["observed"] == pytest.approx(16.17701, abs=0.5)
+    assert ra["exp"] == pytest.approx(11.12193, abs=0.5)
+    assert ra["exp_p1"] == pytest.approx(16.1408, abs=0.5)
+    assert ra["exp_p2"] == pytest.approx(22.8507, abs=0.5)
+    assert ra["exp_m1"] == pytest.approx(7.8224, abs=0.5)
+    assert ra["exp_m2"] == pytest.approx(5.7711, abs=0.5)
+
+    assert ra["observed"] == pytest.approx(rf["observed"], abs=1.0)
+    assert ra["exp"] == pytest.approx(rf["exp"], abs=1.0)
+    assert ra["exp_p1"] == pytest.approx(rf["exp_p1"], abs=2.0)
+    assert ra["exp_p2"] == pytest.approx(rf["exp_p2"], abs=3.0)
+    assert ra["exp_m1"] == pytest.approx(rf["exp_m1"], abs=2.0)
+    assert ra["exp_m2"] == pytest.approx(rf["exp_m2"], abs=3.0)

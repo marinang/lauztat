@@ -74,3 +74,4 @@ def test_with_zfit():
 
     assert ra["pnull"] == pytest.approx(rf["pnull"], abs=0.05)
     assert rf["significance"] == pytest.approx(ra["significance"], abs=0.05)
+    assert rf["significance"] >= 3
