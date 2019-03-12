@@ -32,6 +32,7 @@ class UpperLimit(HypoTest):
     @CLs.setter
     def CLs(self, CLs):
         self._CLs = CLs
+        self._pvalues = self._scannll()
 
     @property
     def qtilde(self):
@@ -46,6 +47,7 @@ class UpperLimit(HypoTest):
         Set True if qtilde statistic is used, else False.
         """
         self._qtilde = qtilde
+        self._pvalues = self._scannll()
 
     def pvalues(self):
         """
@@ -118,7 +120,7 @@ class UpperLimit(HypoTest):
             if len(val) > 0:
                 poiul = val[0]
             else:
-                raise NotImplementedError
+                poiul = None
             if k_ == k:
                 k_ = "observed"
 

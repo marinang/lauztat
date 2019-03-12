@@ -6,6 +6,7 @@ from lauztat.parameters import POI
 from lauztat.hypotests import UpperLimit
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 pwd = os.path.dirname(__file__)
 
 
@@ -65,13 +66,18 @@ def test_freq_with_zfit():
 
     def test_asy():
         calc = AsymptoticCalculator(config)
-        ul_test = UpperLimit(poinull, poialt, calc, CLs=True, qtilde=False)
+        ul_test = UpperLimit(poinull, poialt, calc, CLs=False, qtilde=True)
+        ul_test.CLs = True
+        ul_test.qtilde = False
+        ul_test.plot()
         return ul_test.upperlimit()
 
     def test_freq():
         calc = FrequentistCalculator(config, ntoysnull=5000, ntoysalt=5000)
         calc.readtoys_from_hdf5(Nsig, "{0}/toys_UL_Nsig.hdf5".format(pwd))
         ul_test = UpperLimit(poinull, poialt, calc, CLs=True, qtilde=False)
+        ul_test.plot()
+        ul_test.plot_qdist(poinull[-1])
         return ul_test.upperlimit()
 
     ra = test_asy()

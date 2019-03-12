@@ -67,6 +67,7 @@ def test_with_zfit():
         calc.readtoys_from_hdf5(Nsig, "{0}/toys_Disco_Nsig.hdf5".format(pwd))
         discovery_test = Discovery(poinull, calc)
         r = discovery_test.result()
+        discovery_test.plot_qdist()
         return r
 
     ra = test_asy()
