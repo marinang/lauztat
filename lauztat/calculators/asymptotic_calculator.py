@@ -3,8 +3,8 @@
 
 from .calculator import Calculator, qdist
 from scipy.stats import norm
+from ..util import convert_dataset, eval_pdf
 import numpy as np
-# from ..utils.stats import integrate1d
 from ..parameters import POI
 
 
@@ -25,62 +25,73 @@ class AsymptoticCalculator(Calculator):
         super(AsymptoticCalculator, self).__init__(config)
 
         self._asymov_dataset = {}
-        self._asymov_minimizer = {}
+        self._asymov_loss = {}
         self._asymov_nll = {}
 
     def asymov_dataset(self, poi):
         if poi not in self._asymov_dataset.keys():
-            models = []
-            for m in self.config.models:
-                model = m.copy()
-                model.rm_vars(poi.name)
-                # model.add_vars(Constant(poi.name, poi.value))
-                models.append(model)
+            models = self.config.models
+            minimizer = self.config.minimizer
+            oldverbose = minimizer.verbosity
+            minimizer.verbosity = 5
 
-            datasets = self.config.datasets
-            weights = self.config.weights
+            loss = self.config.obsloss()
 
-            loss = self.config.lossbuilder(models, datasets, weights)
-
-            minimizer = self.config.minimizer(loss)
+            poiparam = poi.parameter
+            poivalue = poi.value
 
             msg = "\nGet fit best values for nuisance parameters for the"
             msg += " alternative hypothesis!"
             print(msg)
-            minimizer.minimize()
-            values = minimizer.values
+
+            with poiparam.set_value(poivalue):
+                poiparam.floating = False
+                asymin = minimizer.minimize(loss=loss)
+                print(poivalue)
+                poiparam.floating = True
+
+            minimizer.verbosity = oldverbose
+
+            values = asymin.params
+            values[poiparam] = {"value": poivalue}
 
             asydatasets = []
 
             for m in models:
-                bounds = m.obs[0].range
-                asydatasets.append(generate_asymov_dataset(m, values, bounds))
+                space = m.space
+                asydatasets.append(generate_asymov_dataset(m, values, space))
 
             self._asymov_dataset[poi] = asydatasets
 
         return self._asymov_dataset[poi]
 
-    def asymov_minimizer(self, poi):
-        if poi not in self._asymov_minimizer.keys():
-            models = [m.copy() for m in self.config.models]
+    def asymov_loss(self, poi):
+        if poi not in self._asymov_loss.keys():
+            config = self.config
+            models = config.models
+            obsdata = config.datasets
             datasets = []
-            weights = []
 
-            for ad in self.asymov_dataset(poi):
-                datasets.append(ad[0])
-                weights.append(ad[1])
+            for i, ad in enumerate(self.asymov_dataset(poi)):
+                data = convert_dataset(obsdata[i], ad[0], ad[1])
+                datasets.append(data)
 
-            loss = self.config.lossbuilder(models, datasets, weights)
+            loss = config.lossbuilder(models, datasets)
 
-            self._asymov_minimizer[poi] = self.config.minimizer(loss)
+            self._asymov_loss[poi] = loss
 
-        return self._asymov_minimizer[poi]
+        return self._asymov_loss[poi]
 
     def asymov_nll(self, poi, poialt):
+        config = self.config
+        minimizer = config.minimizer
+
         ret = np.empty(len(poi))
         for i, p in enumerate(poi):
             if p not in self._asymov_nll.keys():
-                nll = self.asymov_minimizer(poialt).profile(p.name, p.value)
+                loss = self.asymov_loss(poialt)
+                nll = config.pll(minimizer, loss, p.parameter, p.value)
+                # nll = self.asymov_minimizer(poialt).profile(p.name, p.value)
                 self._asymov_nll[p] = nll
             ret[i] = self._asymov_nll[p]
         return ret
@@ -88,13 +99,13 @@ class AsymptoticCalculator(Calculator):
     def pvalue(self, poinull, poialt=None, qtilde=False, onesided=True,
                onesideddiscovery=False):
 
-        poiname = poinull.name
+        poiparam = poinull.parameter
 
-        bf = self.config.bestfit[poiname]
+        bf = self.config.bestfit.params[poiparam]["value"]
         if qtilde and bf < 0:
-            bestfitpoi = POI(poiname, 0)
+            bestfitpoi = POI(poiparam, 0)
         else:
-            bestfitpoi = POI(poiname, bf)
+            bestfitpoi = POI(poiparam, bf)
 
         qobs = self.qobs(poinull, bestfitpoi)
 
@@ -180,33 +191,33 @@ class AsymptoticCalculator(Calculator):
         return ret
 
 
-def generate_asymov_dataset(model, params, bounds, nbins=100):
+def generate_asymov_dataset(model, params, space, nbins=100):
 
-    def bin_expectation_value(bin_low, bin_high):
+    bounds = space.limit1d
+    bins_edges = np.linspace(*bounds, nbins+1)
+    data_asy = bins_edges[0: -1] + np.diff(bins_edges)/2
 
-        args = []
-        for p in model.parameters[1:]:
-            args.append(params[p])
-        args = tuple(args)
-        # ret = integrate1d(model, (bin_low, bin_high), 100, *args)
-        ret = None
+    weight_asy = eval_pdf(model, data_asy, params)
+    weight_asy *= (space.area() / nbins)
 
-        return ret
-
-    bins_edges = np.linspace(bounds[0], bounds[1], nbins + 1)
-    data_asy = np.zeros(nbins)
-    weight_asy = np.zeros(nbins)
-
-    for nb in range(nbins):
-
-        low_bin = bins_edges[nb]
-        high_bin = bins_edges[nb+1]
-        bin_center = low_bin + (high_bin - low_bin)/2
-
-        exp_val = bin_expectation_value(low_bin, high_bin)
-
-        data_asy[nb] = bin_center
-        weight_asy[nb] = exp_val
+    # def bin_expectation_value(bin_low, bin_high):
+    #     ret = integrate_pdf(model, (bin_low, bin_high), params)
+    #     return ret
+    #
+    # bins_edges = np.linspace(bounds[0], bounds[1], nbins + 1)
+    # data_asy = np.zeros(nbins)
+    # weight_asy = np.zeros(nbins)
+    #
+    # for nb in range(nbins):
+    #
+    #     low_bin = bins_edges[nb]
+    #     high_bin = bins_edges[nb+1]
+    #     bin_center = low_bin + (high_bin - low_bin)/2
+    #
+    #     exp_val = bin_expectation_value(low_bin, high_bin)
+    #
+    #     data_asy[nb] = bin_center
+    #     weight_asy[nb] = exp_val
 
     return data_asy, weight_asy
 

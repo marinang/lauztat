@@ -27,13 +27,27 @@ class HypoTest(object):
             msg = msg.format(poialt.__class__.__name__, "alt")
             raise TypeError(msg)
 
-        self.poinull = poinull
-        self.poialt = poialt
+        self._poinull = poinull
+        self._poialt = poialt
 
         if not isinstance(calculator, Calculator):
             msg = "Invalid type, {0}, for calculator. Calculator required."
             raise TypeError(msg)
         self._calculator = calculator
+
+    @property
+    def poinull(self):
+        """
+        Returns the POI for the null hypothesis.
+        """
+        return self._poinull
+
+    @property
+    def poialt(self):
+        """
+        Returns the POI for the alternative hypothesis.
+        """
+        return self._poialt
 
     @property
     def calculator(self):
@@ -42,4 +56,4 @@ class HypoTest(object):
         """
         return self._calculator
 
-        self._bestfitpoi = None
+        # self._bestfitpoi = None

@@ -32,7 +32,6 @@ class FrequentistCalculator(Calculator):
     def dotoys(self, poigen, ntoys, poieval, printfreq=0.2):
         config = self.config
         models = config.models
-        weights = config.weights
         minimizer = config.minimizer
         g_param = poigen.parameter
         g_value = poigen.value
@@ -46,7 +45,7 @@ class FrequentistCalculator(Calculator):
         try:
             loss_toys = self.loss_toys[g_param]
         except KeyError:
-            loss_toys = self.config.lossbuilder(models, sampler, weights)
+            loss_toys = self.config.lossbuilder(models, sampler)
             self.loss_toys[g_param] = loss_toys
 
         result = {"bestfit": {"values": np.empty(ntoys),

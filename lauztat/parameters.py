@@ -392,10 +392,15 @@ class POI(object):
     def __eq__(self, other):
         if not isinstance(other, POI):
             return NotImplemented
-        if self.value == other.value and self.name == other.name:
-            return True
+
+        if self.__len__() > 1:
+            cond = all(self.value == other.value)
+            ncond = self.name == other.name
+            return cond and ncond
         else:
-            return False
+            cond = self.value == other.value
+            ncond = self.name == other.name
+            return cond and ncond
 
     def __hash__(self):
         return hash((self.name, self.value))

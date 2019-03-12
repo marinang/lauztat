@@ -1,3 +1,4 @@
+
 def profileLikelihood(minimizer, loss, var, value):
     with var.set_value(value) as value:
         var.floating = False
@@ -48,7 +49,7 @@ def base_sample(sampler, ntoys, param=None, value=None, *args, **kwargs):
 class Config(object):
 
     def __init__(self, models, datasets, lossbuilder, minimizer, sampler=None,
-                 sample_method=None, pll=None, weights=None, bestfit=None):
+                 sample_method=None, pll=None, bestfit=None):
 
         if not isinstance(models, (list, tuple)):
             models = [models]
@@ -56,15 +57,8 @@ class Config(object):
         if not isinstance(datasets, (list, tuple)):
             datasets = [datasets]
 
-        if weights is None:
-            weights = [None for d in datasets]
-
-        if not isinstance(weights, (list, tuple)):
-            weights = [weights]
-
         self.models = models
         self.datasets = datasets
-        self.weights = weights
         self.lossbuilder = lossbuilder
         self.minimizer = minimizer
         self.minimizer.verbosity = 0
@@ -94,14 +88,14 @@ class Config(object):
             return self._sample(sampler, ntoys, param, value)
 
     def obsloss(self):
-        return self.lossbuilder(self.models, self.datasets, self.weights)
+        return self.lossbuilder(self.models, self.datasets)
 
-    def loop(self):
-        for n in range(len(self.models)):
-            m = self.models[n]
-            d = self.datasets[n]
-            w = self.weights[n]
-            yield (m, d, w)
+    # def loop(self):
+    #     for n in range(len(self.models)):
+    #         m = self.models[n]
+    #         d = self.datasets[n]
+    #         w = self.weights[n]
+    #         yield (m, d, w)
 
     @property
     def bestfit(self):

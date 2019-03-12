@@ -12,6 +12,7 @@ def test_constructors():
     with pytest.raises(TypeError):
         FrequentistCalculator()
 
+
 # @pytest.mark.skip()
 def test_with_zfit():
 
@@ -60,8 +61,8 @@ def test_with_zfit():
     assert calc.obs_nll(mean_poi[1]) == mean_nll[1]
     assert calc.obs_nll(mean_poi[2]) == mean_nll[2]
 
-    poinull = POI(mean, 1.6)
-    poialt = POI(mean, 1.2)
+    poinull = POI(mean, 1.2)
+    poialt = POI(mean, 1.6)
 
     calc.dotoys_null(poinull, poialt)
     calc.dotoys_alt(poialt, poinull)
@@ -69,7 +70,7 @@ def test_with_zfit():
     pnull, palt = calc.pvalue(poinull, poialt)
 
     assert pnull < 0.05
-    assert palt < 0.1
+    assert palt == pytest.approx(0.0, abs=0.01)
 
     calc.toys_to_hdf5("toys.hdf5")
 

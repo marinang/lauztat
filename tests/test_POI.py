@@ -29,6 +29,8 @@ def test_pois():
 
     assert all(pn.value == vals)
     assert len(pn) == len(vals)
+    assert pn != p
+    assert pn != p1
     assert pn[0] == p
     assert pn[-1] == p1
 
