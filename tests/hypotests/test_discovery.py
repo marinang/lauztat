@@ -6,6 +6,8 @@ from lauztat.parameters import POI
 from lauztat.hypotests import Discovery
 import numpy as np
 import os
+import matplotlib as mpl
+mpl.use('Agg')
 pwd = os.path.dirname(__file__)
 
 

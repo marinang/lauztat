@@ -5,7 +5,6 @@ from lauztat.calculators import FrequentistCalculator
 from lauztat.config import Config
 from lauztat.parameters import POI
 import numpy as np
-from contextlib import ExitStack
 
 
 def test_constructors():

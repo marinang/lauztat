@@ -44,8 +44,8 @@ def test_with_zfit():
 
     with pytest.raises(TypeError):
         HypoTest(poinull=poinull, calculator=calc, poialt="poialt")
-        HypoTest(calc, poinull)
-        HypoTest("calc", "poinull")
+        HypoTest(poinull=calc, calculator=poinull)
+        HypoTest(calculator="calc", poinull="poinull")
         HypoTest(poinull, "calc")
         HypoTest("poinull", calc)
 

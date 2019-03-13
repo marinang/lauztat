@@ -391,15 +391,3 @@ class FrequentistCalculator(Calculator):
     #         ret.append(np.percentile(values, frac))
     #
     #     return ret
-
-
-def gentoys(models, ntoys, nsamples=None, **kwargs):
-    toys = []
-    for n in range(ntoys):
-        toy = []
-        for i in range(len(models)):
-            m = models[i]
-            n = nsamples[i]
-            toy.append(m.sample(n, **kwargs))
-        toys.append(toy)
-    return toys

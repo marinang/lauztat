@@ -6,7 +6,8 @@ from lauztat.parameters import POI
 from lauztat.hypotests import UpperLimit
 import numpy as np
 import os
-import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use('Agg')
 pwd = os.path.dirname(__file__)
 
 
@@ -84,15 +85,15 @@ def test_freq_with_zfit():
     rf = test_freq()
 
     assert ra["observed"] == pytest.approx(16.17701, abs=0.5)
-    assert ra["exp"] == pytest.approx(11.12193, abs=0.5)
+    assert ra["exp"] == pytest.approx(11.6035, abs=0.5)
     assert ra["exp_p1"] == pytest.approx(16.1408, abs=0.5)
-    assert ra["exp_p2"] == pytest.approx(22.8507, abs=0.5)
-    assert ra["exp_m1"] == pytest.approx(7.8224, abs=0.5)
-    assert ra["exp_m2"] == pytest.approx(5.7711, abs=0.5)
+    assert ra["exp_p2"] == pytest.approx(21.6444, abs=0.5)
+    assert ra["exp_m1"] == pytest.approx(8.3593, abs=0.5)
+    assert ra["exp_m2"] == pytest.approx(6.2267, abs=0.5)
 
     assert ra["observed"] == pytest.approx(rf["observed"], abs=1.0)
-    assert ra["exp"] == pytest.approx(rf["exp"], abs=1.0)
+    assert ra["exp"] == pytest.approx(rf["exp"], abs=2.0)
     assert ra["exp_p1"] == pytest.approx(rf["exp_p1"], abs=2.0)
-    assert ra["exp_p2"] == pytest.approx(rf["exp_p2"], abs=3.0)
+    assert ra["exp_p2"] == pytest.approx(rf["exp_p2"], abs=2.0)
     assert ra["exp_m1"] == pytest.approx(rf["exp_m1"], abs=2.0)
-    assert ra["exp_m2"] == pytest.approx(rf["exp_m2"], abs=3.0)
+    assert ra["exp_m2"] == pytest.approx(rf["exp_m2"], abs=2.0)

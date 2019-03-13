@@ -33,6 +33,8 @@ class Discovery(HypoTest):
 
     def plot_qdist(self, bins=50, log=False, histtype='step', **kwargs):
 
+        import matplotlib.pyplot as plt
+
         if isinstance(self.calculator, AsymptoticCalculator):
             raise ValueError("Nothing to plot!")
 

@@ -9,7 +9,7 @@ major, minor = sys.version_info[:2]
 
 tr = ["pytest", "jupyter", "papermill", "jsonschema==2.6.0"]
 tr += ["jupyter_client", "zfit", "h5py"]
-ir = ["attrs>=18.2.0"]
+ir = ["attrs>=18.2.0", "scipy", "numpy"]
 
 if major >= 3 and minor >= 5:
     ir += ["matplotlib"]
@@ -31,7 +31,7 @@ setup(name="lauztat",
       author_email="matthieu.marinangeli@epfl.ch",
       maintainer="Matthieu Marinangeli",
       maintainer_email="matthieu.marinangeli@epfl.ch",
-      url="https://github.com/marinang/statrise",
+      url="https://github.com/marinang/lauztat",
       download_url="",
       license="",
       test_suite="tests",

@@ -104,8 +104,12 @@ class UpperLimit(HypoTest):
         else:
             k = "clsb"
 
-        keys = [k, "exp", "exp_p1", "exp_m1", "exp_p2", "exp_m2"]
         values = {}
+        if isinstance(self.calculator, AsymptoticCalculator):
+            keys = [k]
+        else:
+            keys = [k, "exp", "exp_p1", "exp_m1", "exp_p2", "exp_m2"]
+
         for k_ in keys:
             p_ = pvalues[k_]
             pvals = poivalues
@@ -126,27 +130,18 @@ class UpperLimit(HypoTest):
 
             values[k_] = poiul
 
-        # poiul = POI(poiparam, poiul)
-        #
-        # sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
-        # exp_poi = self.calculator.expected_poi
-        #
-        # if isinstance(self.calculator, AsymptoticCalculator):
-        #     kwargs = dict(poinull=poiul, poialt=self.poialt, nsigma=sigmas,
-        #                   alpha=self.alpha, CLs=self.CLs)
-        # elif isinstance(self.calculator, FrequentistCalculator):
-        #     kwargs = dict(poinull=self.poinull, poialt=self.poialt,
-        #                   nsigma=sigmas, alpha=self.alpha, qtilde=self.qtilde,
-        #                   onesided=True, onesideddiscovery=False)
+        if isinstance(self.calculator, AsymptoticCalculator):
+            poiul = POI(poiparam, poiul)
+            exp_poi = self.calculator.expected_poi
+            sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
+            kwargs = dict(poinull=poiul, poialt=self.poialt, nsigma=sigmas,
+                          alpha=self.alpha, CLs=self.CLs)
 
-        # results = exp_poi(**kwargs)
+            results = exp_poi(**kwargs)
+            keys = ["exp", "exp_p1", "exp_p2", "exp_m1", "exp_m2"]
 
-        # bands = {}
-        # bands["median"] = results[0]
-        # bands["band_p1"] = results[1]
-        # bands["band_p2"] = results[2]
-        # bands["band_m1"] = results[3]
-        # bands["band_m2"] = results[4]
+            for r, k_ in zip(results, keys):
+                values[k_] = r
 
         if printlevel > 0:
 
@@ -175,6 +170,8 @@ class UpperLimit(HypoTest):
                 - **ax** (optionnal) matplotlib axis
                 - **show** (optionnal) show the plot. default **True**.
         """
+
+        import matplotlib.pyplot as plt
 
         pvalues = self.pvalues()
         poivalues = self.poinull.value
@@ -230,6 +227,8 @@ class UpperLimit(HypoTest):
 
     def plot_qdist(self, poinull, bins=50, log=False, histtype='step',
                    **kwargs):
+
+        import matplotlib.pyplot as plt
 
         if isinstance(self.calculator, AsymptoticCalculator):
             raise ValueError("Nothing to plot!")
