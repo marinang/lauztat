@@ -41,7 +41,7 @@ def eval_pdf(model, x, params):
         for p in deps:
             value = params[p]["value"]
             stack.enter_context(p.set_value(value))
-        ret = eval(model, x)
+        ret = eval_(model, x)
 
     return ret
 

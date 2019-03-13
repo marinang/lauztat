@@ -19,8 +19,7 @@ def test_with_zfit():
     import zfit
     from zfit.core.loss import UnbinnedNLL
     from zfit.minimizers.minimizer_minuit import MinuitMinimizer
-    import tensorflow as tf
-    tf.random.set_random_seed(34)
+    zfit.setrings.set_seed(34)
 
     data = np.random.normal(1.2, 0.1, 10000)
 
