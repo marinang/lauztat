@@ -14,7 +14,7 @@ def test_constructors():
         FrequentistCalculator()
 
 
-@pytest.mark.skip()
+# @pytest.mark.skip()
 def test_with_zfit():
 
     import zfit
