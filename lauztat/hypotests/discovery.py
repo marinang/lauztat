@@ -1,6 +1,5 @@
 from .hypotest import HypoTest
 from scipy.stats import norm
-import matplotlib.pyplot as plt
 from ..calculators import AsymptoticCalculator
 from ..parameters import POI
 

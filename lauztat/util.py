@@ -28,11 +28,11 @@ def eval_pdf(model, x, params):
     if "zfit" in str(model.__class__):
         import zfit
 
-        def eval(model, x):
+        def eval_(model, x):
             ret = zfit.run(model.pdf(x))
             return ret
     else:
-        def eval(model, x):
+        def eval_(model, x):
             return NotImplemented
 
     deps = list(model.get_dependents())

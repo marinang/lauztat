@@ -1,5 +1,5 @@
-lauztat 🚧
-^^^^^^^^^^^
+lauztat
+^^^^^^^
 
 Pure python statistics tools for high energy physics.
 
@@ -19,11 +19,12 @@ Pure python statistics tools for high energy physics.
     :alt: Coveralls github
     :target: https://coveralls.io/github/marinang/lauztat?branch=master
 
-WIP! Waiting for standard API in HEP! See discussions at `PyHEP gitter channel <https://gitter.im/HSF/PyHEP>`_.
+
 
 dependencies:
 =============
 
 - `Python <http://docs.python-guide.org/en/latest/starting/installation/>`__ (2.7+, 3.4+)
 - `Numpy <https://scipy.org/install.html>`__
+- `zfit <https://github.com/zfit/zfit>`__
 - `matplotlib <https://matplotlib.org/users/installing.html>`__ (optionnal)
