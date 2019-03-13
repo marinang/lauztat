@@ -1,1 +1,1 @@
--e https://github.com/zfit/zfit
+-e git://github.com/zfit/zfit
