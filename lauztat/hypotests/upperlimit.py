@@ -177,7 +177,7 @@ class UpperLimit(HypoTest):
         alpha = self.alpha
 
         if ax is None:
-            fig, ax = plt.subplots(figsize=(10, 8))
+            _, ax = plt.subplots(figsize=(10, 8))
 
         if self.CLs:
             cls_clr = "r"
