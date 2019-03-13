@@ -1,9 +1,7 @@
 from .hypotest import HypoTest
 from scipy.interpolate import InterpolatedUnivariateSpline
-import matplotlib.pyplot as plt
 from ..parameters import POI
 from ..calculators import AsymptoticCalculator
-# FrequentistCalculator
 
 
 class UpperLimit(HypoTest):

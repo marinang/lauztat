@@ -18,7 +18,7 @@ def base_sampler(models, floatting_params=None, *args, **kwargs):
             if floatting_params:
                 return p.name in floatting_params
             else:
-                False
+                return False
         fixed = [p for p in m.get_dependents() if not cond(p)]
         fixed_params.append(fixed)
 

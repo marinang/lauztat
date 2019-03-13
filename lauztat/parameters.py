@@ -30,11 +30,11 @@ class POI(object):
         self.value = value
 
     def __repr__(self):
-        repr = "POI('{0}'".format(self.name)
+        r = "POI('{0}'".format(self.name)
         if self.value is not None:
-            return "{0}, value={1})".format(repr, self.value)
+            return "{0}, value={1})".format(r, self.value)
         else:
-            return repr + ")"
+            return r + ")"
 
     def __getitem__(self, i):
         return POI(self.parameter, self.value[i])

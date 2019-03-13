@@ -220,7 +220,8 @@ class FrequentistCalculator(Calculator):
     def nll(self, poigen, poi):
         return self._toysresults[poigen]["nll"][poi]
 
-    def q(self, nll1, nll2):
+    @classmethod
+    def q(cls, nll1, nll2):
         return 2*(nll1 - nll2)
 
     def qnull(self, poi, qtilde=False):
