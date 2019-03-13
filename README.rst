@@ -23,6 +23,9 @@ Pure python statistics tools for high energy physics.
     :alt: Codacy Badge
     :target: https://app.codacy.com/app/marinang/lauztat?utm_source=github.com&utm_medium=referral&utm_content=marinang/lauztat&utm_campaign=Badge_Grade_Dashboard
 
+.. image:: https://mybinder.org/badge_logo.svg
+    :target: https://mybinder.org/v2/gh/marinang/lauztat/master?filepath=%2Fdocs%2Fexamples%2Fnotebooks
+
 
 dependencies:
 =============
