@@ -5,6 +5,7 @@ from lauztat.calculators import FrequentistCalculator
 from lauztat.config import Config
 from lauztat.parameters import POI
 import numpy as np
+from contextlib import ExitStack
 
 
 def test_constructors():
@@ -13,7 +14,7 @@ def test_constructors():
         FrequentistCalculator()
 
 
-# @pytest.mark.skip()
+@pytest.mark.skip()
 def test_with_zfit():
 
     import zfit
@@ -43,7 +44,15 @@ def test_with_zfit():
             samplers.append(sampler)
         return samplers
 
-    config = Config(model, data_, lossbuilder, minimizer, sampler=sampler)
+    def sampling(samplers, ntoys, param, value):
+        for i in range(ntoys):
+            with param.set_value(value):
+                for s in samplers:
+                    s.resample()
+            yield i
+
+    config = Config(model, data_, lossbuilder, minimizer, sampler=sampler,
+                    sample_method=sampling)
 
     calc = FrequentistCalculator(config, ntoysnull=100, ntoysalt=100)
 

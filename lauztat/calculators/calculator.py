@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import numpy as np
-from numba import jit
+# from numba import jit
 
 
 class Calculator(object):
@@ -30,7 +30,7 @@ class Calculator(object):
         return qobs
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def qdist(qdist, bestfit, poival, onesided=True, onesideddiscovery=False):
     zeros = np.zeros(qdist.shape)
     if onesideddiscovery:

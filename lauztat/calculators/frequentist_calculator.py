@@ -5,7 +5,6 @@ from ..parameters import POI
 import numpy as np
 from scipy.stats import norm
 # from scipy.interpolate import InterpolatedUnivariateSpline
-import h5py
 np.warnings.filterwarnings('ignore')
 
 
@@ -110,6 +109,8 @@ class FrequentistCalculator(Calculator):
         self._toysresults[poi] = toyresult
 
     def toys_to_hdf5(self, filename):
+        import h5py
+
         f = h5py.File(filename, "w")
 
         for k, v in self._toysresults.items():
@@ -129,6 +130,8 @@ class FrequentistCalculator(Calculator):
         print("Toys successfully saved to '{0}' !".format(filename))
 
     def readtoys_from_hdf5(self, parameter, filename):
+        import h5py
+
         toys = {}
         f = h5py.File(filename, "r")
 
