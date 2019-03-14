@@ -1,26 +1,16 @@
 from .hypotest import HypoTest
 from scipy.interpolate import interp1d
-#import matplotlib.pyplot as plt
-from ..parameters import POI
+import numpy as np
 
 
 class ConfidenceInterval(HypoTest):
     def __init__(self, poinull, poialt, calculator,
-                 qtilde=False, alpha=0.32):
+                 qtilde=False):
 
         super(ConfidenceInterval, self).__init__(poinull, calculator, poialt)
 
-        self._alpha = alpha
-        self._pvalues = {}
+        self._pvalues = None
         self._qtilde = qtilde
-
-    @property
-    def alpha(self):
-        return self._alpha
-
-    @alpha.setter
-    def alpha(self, alpha):
-        self._alpha = alpha
 
     @property
     def qtilde(self):
@@ -41,7 +31,7 @@ class ConfidenceInterval(HypoTest):
         Returns p-values scanned for the values of the parameters of interest
         in the null hypothesis.
         """
-        if self._pvalues:
+        if self._pvalues is not None:
             return self._pvalues
         else:
             self._pvalues = self._scannll()
@@ -52,29 +42,13 @@ class ConfidenceInterval(HypoTest):
         poinull = self.poinull
         poialt = self.poialt
 
-        pnull, palt = self.calculator.pvalue(poinull, poialt,
-                                             qtilde=self.qtilde,
-                                             onesided=False)
+        pnull, _ = self.calculator.pvalue(poinull, poialt,
+                                          qtilde=self.qtilde,
+                                          onesided=False)
 
-        p_values = {}
-        p_values["clsb"] = pnull
-        p_values["clb"] = palt
+        return pnull
 
-        sigmas = [0.0, 1.0, 2.0, -1.0, -2.0]
-
-        exp_pvalf = self.calculator.expected_pvalue
-
-        result = exp_pvalf(self.poinull, self.poialt, sigmas, CLs=False)
-
-        p_values["exp"] = result[0]
-        p_values["exp_p1"] = result[1]
-        p_values["exp_p2"] = result[2]
-        p_values["exp_m1"] = result[3]
-        p_values["exp_m2"] = result[4]
-
-        return p_values
-
-    def interval(self, printlevel=1):
+    def interval(self, alpha=0.32, printlevel=1):
         """
         Returns the confidence level on the parameter of interest.
         """
@@ -84,16 +58,15 @@ class ConfidenceInterval(HypoTest):
         poialt = self.poialt
         poiname = self.poinull.name
 
-        p = pvalues["clsb"]
-        pois = interp1d(p, poivalues, kind='cubic')
-        p_m = p[poivalues < pois(max(p))]
-        p_p = p[poivalues > pois(max(p))]
-        poivalues_m = poivalues[poivalues < pois(max(p))]
-        poivalues_p = poivalues[poivalues > pois(max(p))]
+        pois = interp1d(pvalues, poivalues, kind='cubic')
+        p_m = pvalues[poivalues < pois(np.max(pvalues))]
+        p_p = pvalues[poivalues > pois(np.max(pvalues))]
+        poivalues_m = poivalues[poivalues < pois(np.max(pvalues))]
+        poivalues_p = poivalues[poivalues > pois(np.max(pvalues))]
         pois_m = interp1d(p_m, poivalues_m, kind='cubic')
         pois_p = interp1d(p_p, poivalues_p, kind='cubic')
-        poi_m = float(pois_m(self.alpha))
-        poi_p = float(pois_p(self.alpha))
+        poi_m = float(pois_m(alpha))
+        poi_p = float(pois_p(alpha))
 
         bands = {}
         bands["observed"] = poialt.value
@@ -104,6 +77,28 @@ class ConfidenceInterval(HypoTest):
 
             msg = "Confidence interval on {0}:\n"
             msg += "\t{band_m} < {0} < {band_p} at {1:.2f}% C.L."
-            print(msg.format(poiname, 1-self.alpha, **bands))
+            print(msg.format(poiname, 1 - alpha, **bands))
 
         return bands
+
+    def plot(self, alpha=0.32, ax=None, show=True, **kwargs):
+
+        import matplotlib.pyplot as plt
+
+        pvalues = self.pvalues()
+        poivalues = self.poinull.value
+        poiname = self.poinull.name
+
+        if ax is None:
+            _, ax = plt.subplots(figsize=(10, 8))
+
+        ax.plot(poivalues, pvalues)
+        ax.axhline(alpha)
+
+        ax.set_ylim(-0.01, 1.1)
+        ax.set_ylabel("1-CL")
+        ax.set_xlabel(poiname)
+        # ax.legend(loc="best", fontsize=14)
+
+        if show:
+            plt.show()

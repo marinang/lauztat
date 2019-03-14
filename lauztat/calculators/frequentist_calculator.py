@@ -20,7 +20,7 @@ class FrequentistCalculator(Calculator):
 
         super(FrequentistCalculator, self).__init__(config)
 
-        self._toysresults = {}
+        self.toysresults = {}
         self._minimizers = {}
         self.ntoysnull = ntoysnull
         self.ntoysalt = ntoysalt
@@ -106,14 +106,14 @@ class FrequentistCalculator(Calculator):
             nlldict[poi_] = v
 
         toyresult = {"bestfit": {"values": bf, "nll": nllbf}, "nll": nlldict}
-        self._toysresults[poi] = toyresult
+        self.toysresults[poi] = toyresult
 
     def toys_to_hdf5(self, filename):
         import h5py
 
         f = h5py.File(filename, "w")
 
-        for k, v in self._toysresults.items():
+        for k, v in self.toysresults.items():
             # k = POI("name", poivalue)
             poigenv = str(k.value)
             f.create_group(poigenv)
@@ -153,18 +153,19 @@ class FrequentistCalculator(Calculator):
                     # if j = 'nll', o = poival
 
         f.close()
-        self._toysresults = toys
+        self.toysresults = toys
         print("Toys successfully read from '{0}' !".format(filename))
 
-    def dotoys_null(self, poinull, poialt, qtilde=False):
+    def dotoys_null(self, poinull, poialt=None, qtilde=False, printlevel=1):
 
         ntoys = self.ntoysnull
 
         for p in poinull:
-            if p in self._toysresults.keys():
+            if p in self.toysresults.keys():
                 continue
             msg = "Generating null hypothesis toys for {0}."
-            print(msg.format(p))
+            if printlevel >= 0:
+                print(msg.format(p))
 
             toeval = [p]
             if poialt is not None:
@@ -177,18 +178,19 @@ class FrequentistCalculator(Calculator):
 
             toyresult = self.dotoys(p, ntoys, toeval)
 
-            self._toysresults[p] = toyresult
+            self.toysresults[p] = toyresult
 
-    def dotoys_alt(self, poialt, poinull, qtilde=False):
+    def dotoys_alt(self, poialt, poinull=None, qtilde=False, printlevel=1):
 
         ntoys = self.ntoysalt
 
         for p in poialt:
 
-            if p in self._toysresults.keys():
+            if p in self.toysresults.keys():
                 continue
             msg = "Generating alt hypothesis toys for {0}."
-            print(msg.format(p))
+            if printlevel >= 0:
+                print(msg.format(p))
 
             toeval = [p]
             if poinull is not None:
@@ -201,24 +203,24 @@ class FrequentistCalculator(Calculator):
 
             toyresult = self.dotoys(p, ntoys, toeval)
 
-            self._toysresults[p] = toyresult
+            self.toysresults[p] = toyresult
 
     def poi_bestfit(self, poigen, qtilde=False):
-        bf = self._toysresults[poigen]["bestfit"]["values"]
+        bf = self.toysresults[poigen]["bestfit"]["values"]
         if qtilde:
             bf = np.where(bf < 0, 0, bf)
         return bf
 
     def nll_bestfit(self, poigen, qtilde=False):
-        nll = self._toysresults[poigen]["bestfit"]["nll"]
+        nll = self.toysresults[poigen]["bestfit"]["nll"]
         if qtilde:
-            bf = self._toysresults[poigen]["bestfit"]["values"]
+            bf = self.toysresults[poigen]["bestfit"]["values"]
             nll_zero = self.nll(poigen, POI(poigen.parameter, 0.))
             nll = np.where(bf < 0, nll_zero, nll)
         return nll
 
     def nll(self, poigen, poi):
-        return self._toysresults[poigen]["nll"][poi]
+        return self.toysresults[poigen]["nll"][poi]
 
     @classmethod
     def q(cls, nll1, nll2):

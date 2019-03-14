@@ -2,7 +2,7 @@
 import pytest
 
 import zfit
-from lauztat import POI
+from lauztat.parameters import POI
 import numpy as np
 
 mean = zfit.Parameter("mu", 1.2, 0.1, 2)

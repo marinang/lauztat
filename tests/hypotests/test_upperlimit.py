@@ -31,7 +31,7 @@ lambda_mu = -2.022148383099551
 lambda_sigma = 0.0748696
 
 
-def test_freq_with_zfit():
+def test_with_zfit():
 
     import zfit
     from zfit.core.loss import ExtendedUnbinnedNLL
@@ -39,11 +39,11 @@ def test_freq_with_zfit():
 
     obs = zfit.Space('x', limits=bounds)
 
-    lambda_ = zfit.Parameter("lambda_UL_freq", -2.0, -4.0, -0.5)
-    mean = zfit.Parameter("mean_UL_freq", 1.2, 0.1, 2., floating=False)
-    sigma = zfit.Parameter("sigma_UL_freq", 0.1, floating=False)
-    Nsig = zfit.Parameter("Nsig_UL_freq", 1., -20., len(data))
-    Nbkg = zfit.Parameter("Nbkg_UL_freq", len(data), 0., len(data)*1.1)
+    lambda_ = zfit.Parameter("lambda_UL", -2.0, -4.0, -0.5)
+    mean = zfit.Parameter("mean_UL", 1.2, 0.1, 2., floating=False)
+    sigma = zfit.Parameter("sigma_UL", 0.1, floating=False)
+    Nsig = zfit.Parameter("Nsig_UL", 1., -20., len(data))
+    Nbkg = zfit.Parameter("Nbkg_UL", len(data), 0., len(data)*1.1)
 
     model_bkg = zfit.pdf.Exponential(obs=obs, lambda_=lambda_)
     signal = Nsig * zfit.pdf.Gauss(obs=obs, mu=mean, sigma=sigma)
