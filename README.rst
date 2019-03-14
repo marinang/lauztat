@@ -45,10 +45,17 @@ in a frequentist approach (using pseudo-experiments) or using asymptotic formula
 
 lauztat has been developed at EPFL, Lausanne Switzerland (laus' or lauz is how the cool kids call Lausanne).
 
+Installation
+------------
 
+Install ``lauztat`` like any other Python package:
 
-dependencies:
-=============
+.. code-block:: bash
+
+    pip install lauztat
+
+Dependencies:
+-------------
 
 - `Numpy <https://scipy.org/install.html>`__
 - `zfit <https://github.com/zfit/zfit>`__
