@@ -23,7 +23,7 @@ lauztat
 .. image:: https://mybinder.org/badge_logo.svg
     :target: https://mybinder.org/v2/gh/marinang/lauztat/master?filepath=examples%2Fnotebooks%2F
 
- .. image:: https://img.shields.io/pypi/v/lauztat.svg
+.. image:: https://img.shields.io/pypi/v/lauztat.svg
     :alt: PyPI
     :target: https://pypi.org/project/lauztat/
 
