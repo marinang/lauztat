@@ -57,7 +57,7 @@ def test_with_zfit():
 
     config = Config(tot_model, data_, lossbuilder, MinuitMinimizer())
 
-    poinull = POI(mean, value=np.linspace(1.15, 1.26, 50))
+    poinull = POI(mean, value=np.linspace(1.15, 1.26, 30))
     mean_bf = config.bestfit.params[mean]["value"]
     poialt = POI(mean, value=mean_bf)
 

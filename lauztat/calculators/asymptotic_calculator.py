@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python
 
-from .calculator import Calculator, qdist
+from .calculator import Calculator
 from scipy.stats import norm
 from ..util import convert_dataset, eval_pdf
 import numpy as np
-from ..parameters import POI
 
 
 class AsymptoticCalculator(Calculator):
@@ -90,7 +89,6 @@ class AsymptoticCalculator(Calculator):
             if p not in self._asymov_nll.keys():
                 loss = self.asymov_loss(poialt)
                 nll = config.pll(minimizer, loss, p.parameter, p.value)
-                # nll = self.asymov_minimizer(poialt).profile(p.name, p.value)
                 self._asymov_nll[p] = nll
             ret[i] = self._asymov_nll[p]
         return ret
@@ -98,18 +96,8 @@ class AsymptoticCalculator(Calculator):
     def pvalue(self, poinull, poialt=None, qtilde=False, onesided=True,
                onesideddiscovery=False):
 
-        poiparam = poinull.parameter
-
-        bf = self.config.bestfit.params[poiparam]["value"]
-        if qtilde and bf < 0:
-            bestfitpoi = POI(poiparam, 0)
-        else:
-            bestfitpoi = POI(poiparam, bf)
-
-        qobs = self.qobs(poinull, bestfitpoi)
-
-        qobs = qdist(qobs, bestfitpoi.value, poinull.value, onesided,
-                     onesideddiscovery)
+        qobs = self.qobs(poinull, onesided=onesided, qtilde=qtilde,
+                         onesideddiscovery=onesideddiscovery)
 
         sqrtqobs = np.sqrt(qobs)
 
@@ -118,8 +106,9 @@ class AsymptoticCalculator(Calculator):
         if needpalt:
             nll_poinull_asy = self.asymov_nll(poinull, poialt)
             nll_poialt_asy = self.asymov_nll(poialt, poialt)
-            qalt = 2*(nll_poinull_asy - nll_poialt_asy)
-            qalt = qdist(qalt, 0, poinull.value, onesided, onesideddiscovery)
+            qalt = self.q(nll_poinull_asy, nll_poialt_asy)
+            qalt = self.qdist(qalt, 0, poinull.value, onesided=onesided,
+                              onesideddiscovery=onesideddiscovery)
             sqrtqalt = np.sqrt(qalt)
         else:
             palt = None
@@ -152,7 +141,7 @@ class AsymptoticCalculator(Calculator):
         nll_poinull_asy = self.asymov_nll(poinull, poialt)
         nll_poialt_asy = self.asymov_nll(poialt, poialt)
 
-        qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+        qalt = self.q(nll_poinull_asy, nll_poialt_asy)
         qalt = np.where(qalt < 0, 0, qalt)
 
         ret = []
@@ -173,7 +162,7 @@ class AsymptoticCalculator(Calculator):
         nll_poinull_asy = self.asymov_nll(poinull, poialt)
         nll_poialt_asy = self.asymov_nll(poialt, poialt)
 
-        qalt = 2*(nll_poinull_asy - nll_poialt_asy)
+        qalt = self.q(nll_poinull_asy, nll_poialt_asy)
         qalt = np.where(qalt < 0, 0, qalt)
 
         sigma = np.sqrt((poinull.value - poialt.value)**2 / qalt)
@@ -198,25 +187,6 @@ def generate_asymov_dataset(model, params, space, nbins=100):
 
     weight_asy = eval_pdf(model, data_asy, params)
     weight_asy *= (space.area() / nbins)
-
-    # def bin_expectation_value(bin_low, bin_high):
-    #     ret = integrate_pdf(model, (bin_low, bin_high), params)
-    #     return ret
-    #
-    # bins_edges = np.linspace(bounds[0], bounds[1], nbins + 1)
-    # data_asy = np.zeros(nbins)
-    # weight_asy = np.zeros(nbins)
-    #
-    # for nb in range(nbins):
-    #
-    #     low_bin = bins_edges[nb]
-    #     high_bin = bins_edges[nb+1]
-    #     bin_center = low_bin + (high_bin - low_bin)/2
-    #
-    #     exp_val = bin_expectation_value(low_bin, high_bin)
-    #
-    #     data_asy[nb] = bin_center
-    #     weight_asy[nb] = exp_val
 
     return data_asy, weight_asy
 

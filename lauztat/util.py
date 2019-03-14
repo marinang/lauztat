@@ -1,27 +1,27 @@
 from contextlib import ExitStack
 
 
-def integrate_pdf(model, bounds, params):
-
-    if "zfit" in str(model.__class__):
-        import zfit
-
-        def integrate(models, bounds):
-            ret = zfit.run(models.integrate(bounds))
-            return ret
-    else:
-        def integrate(models, bounds):
-            return NotImplemented
-
-    deps = list(model.get_dependents())
-
-    with ExitStack() as stack:
-        for p in deps:
-            value = params[p]["value"]
-            stack.enter_context(p.set_value(value))
-        ret = integrate(model, bounds)
-
-    return ret
+# def integrate_pdf(model, bounds, params):
+#
+#     if "zfit" in str(model.__class__):
+#         import zfit
+#
+#         def integrate(models, bounds):
+#             ret = zfit.run(models.integrate(bounds))
+#             return ret
+#     else:
+#         def integrate(models, bounds):
+#             return NotImplemented
+#
+#     deps = list(model.get_dependents())
+#
+#     with ExitStack() as stack:
+#         for p in deps:
+#             value = params[p]["value"]
+#             stack.enter_context(p.set_value(value))
+#         ret = integrate(model, bounds)
+#
+#     return ret
 
 
 def eval_pdf(model, x, params):

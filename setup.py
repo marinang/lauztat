@@ -1,9 +1,12 @@
 #!/usr/bin/python
 
 import sys
+import os
 
 from setuptools import find_packages
 from setuptools import setup
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 major, minor = sys.version_info[:2]
 
@@ -20,13 +23,16 @@ if major < 3 or (major == 3 and minor <= 4):
     ir += ["ipython<6.0", "ipykernel<5.0.0", "jupyter-console<=5.0.0"]
     tr += ["jupyter_client"]
 
+with open(os.path.join(here, 'README.rst'), encoding='utf-8') as readme_file:
+    readme = readme_file.read()
+
 setup(name="lauztat",
       version="1.0",
       packages=find_packages(exclude=["tests"]),
       scripts=[],
       data_files=["README.rst"],
-      description="Pure python statistic tools for high energy physics, based on iminuit.",
-      long_description="",
+      description="Pure python statistic tools for high energy physics.",
+      long_description=readme.replace(":math:", ""),
       author="Matthieu Marinangeli",
       author_email="matthieu.marinangeli@epfl.ch",
       maintainer="Matthieu Marinangeli",
@@ -45,8 +51,6 @@ setup(name="lauztat",
           "Operating System :: POSIX",
           "Operating System :: Unix",
           "Programming Language :: Python",
-          "Programming Language :: Python :: 3.4",
-          "Programming Language :: Python :: 3.5",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
           "Topic :: Scientific/Engineering :: Physics",
