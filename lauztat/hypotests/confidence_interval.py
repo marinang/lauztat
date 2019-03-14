@@ -75,7 +75,7 @@ class ConfidenceInterval(HypoTest):
 
         if printlevel > 0:
 
-            msg = "Confidence interval on {0}:\n"
+            msg = "\nConfidence interval on {0}:\n"
             msg += "\t{band_m} < {0} < {band_p} at {1:.2f}% C.L."
             print(msg.format(poiname, 1 - alpha, **bands))
 
@@ -93,9 +93,10 @@ class ConfidenceInterval(HypoTest):
             _, ax = plt.subplots(figsize=(10, 8))
 
         ax.plot(poivalues, pvalues)
-        ax.axhline(alpha)
+        ax.axhline(alpha, color="r")
 
-        ax.set_ylim(-0.01, 1.1)
+        ax.set_ylim(0., 1.05)
+        ax.set_xlim(np.min(poivalues), np.max(poivalues))
         ax.set_ylabel("1-CL")
         ax.set_xlabel(poiname)
         # ax.legend(loc="best", fontsize=14)
