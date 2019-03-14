@@ -31,6 +31,9 @@ lauztat
     :alt: PyPI - Python Version
     :target: https://pypi.org/project/lauztat/
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2593789.svg
+    :target: https://doi.org/10.5281/zenodo.2593789
+
 
 
 Pure python statistics tools for high energy physics using `zfit <https://github.com/zfit/zfit>`__ as
