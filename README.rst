@@ -76,8 +76,8 @@ Discovery:
 if you do a measurement to find signals S in a dataset and you find an excess this
 test answers "is the data compatible with the background only ?" with:
 
-    - H\ :sub:`0`: background only (S = 0)
-    - H\ :sub:`1`: presence of a signal (S ≠ 0)
+- H\ :sub:`0`: background only (S = 0)
+- H\ :sub:`1`: presence of a signal (S ≠ 0)
 
 The test return a p-value or a significance Z. If Z ≥ 3 there is an evidence
 and if Z ≥ 5 a discovery of a signal.
@@ -88,7 +88,7 @@ example:
 Search for a gaussian peak over an exponential background. The parameter of interest
 is the signal yield N\ :sub:`sig`. 19 ± 7 signals events are found.
 
-.. image:: https://github.com/marinang/lauztat/tree/master/docs/fit_discovery_ex.png
+.. image:: https://github.com/marinang/lauztat/blob/master/docs/fit_discovery_ex.png
     :alt: fit_discovery_ex
 
 .. code-block:: python
@@ -136,8 +136,8 @@ Upper limit:
 if you find a small signal excess in a dataset, but not enough to claim
 an evidence or a discovery, you can exclude large signal yields S:
 
-    - H\ :sub:`0`: background + some signal (S = S\ :sub:`0`)
-    - H\ :sub:`1`: S < S\ :sub:`0`
+- H\ :sub:`0`: background + some signal (S = S\ :sub:`0`)
+- H\ :sub:`1`: S < S\ :sub:`0`
 
 S\ :sub:`0` is adjusted to a predefined p-value, typically 5%. S\ :sub:`0` is the upper
 limit on the signal yield S with 95 % confidence level
@@ -150,7 +150,7 @@ Search for a gaussian peak over an exponential background. The parameter of inte
 is the signal yield N\ :sub:`sig`. 5 ± 5 signals events are found. The CLs method
 is applied to find the upper limit on N\ :sub:`sig`.
 
-.. image:: https://github.com/marinang/lauztat/tree/master/docs/fit_upper_limit_ex.png
+.. image:: https://github.com/marinang/lauztat/blob/master/docs/fit_upper_limit_ex.png
     :alt: fit_upper_limit_ex
 
 .. code-block:: python
@@ -167,8 +167,10 @@ is applied to find the upper limit on N\ :sub:`sig`.
   Expected upper limit -1 sigma: Nsig = 8.359388717422624
   Expected upper limit +2 sigma: Nsig = 21.644416205737596
   Expected upper limit -2 sigma: Nsig = 6.22672400601805
+  
+  >>> ul_test.plot()
 
-.. image:: https://github.com/marinang/lauztat/tree/master/docs/brazilian_plot.png
+.. image:: https://github.com/marinang/lauztat/blob/master/docs/brazilian_plot.png
     :alt: brazilian_plot
 
 Confidence interval:
@@ -188,7 +190,7 @@ example:
 Measurement of the mean of a gaussian peak found to be 1.21 ± 0.02. We compute a Feldman Cousins
 confidence interval on the mean parameter at 68% CL.
 
-.. image:: https://github.com/marinang/lauztat/tree/master/docs/fit_ci_ex.png
+.. image:: https://github.com/marinang/lauztat/blob/master/docs/fit_ci_ex.png
     :alt: fit_ci_ex
 
 .. code-block:: python
@@ -201,6 +203,8 @@ confidence interval on the mean parameter at 68% CL.
   >>> ci_test.interval()
   Confidence interval on mean:
 	1.1890518753693258 < mean < 1.2249924635033214 at 68% C.L.
+	
+  >>> ci_test.plot()
 
-.. image:: https://github.com/marinang/lauztat/tree/master/docs/ci_1_cl_plot.png
+.. image:: https://github.com/marinang/lauztat/blob/master/docs/ci_1_cl_plot.png
     :alt: ci_1_cl_plot
