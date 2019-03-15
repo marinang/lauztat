@@ -77,7 +77,7 @@ class ConfidenceInterval(HypoTest):
 
             msg = "\nConfidence interval on {0}:\n"
             msg += "\t{band_m} < {0} < {band_p} at {1:.2f}% C.L."
-            print(msg.format(poiname, 1 - alpha, **bands))
+            print(msg.format(poiname, (1 - alpha)*100, **bands))
 
         return bands
 
