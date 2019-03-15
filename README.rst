@@ -193,7 +193,7 @@ confidence interval on the mean parameter at 68% CL.
   Confidence interval on mean:
 	1.1890518753693258 < mean < 1.2249924635033214 at 68% C.L.
 	
-  >>> ul_test.plot()
+  >>> ci_test.plot()
 
 .. image:: https://github.com/marinang/lauztat/blob/master/docs/ci_1_cl_plot.png
     :alt: ci_1_cl_plot
