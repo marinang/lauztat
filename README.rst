@@ -156,6 +156,8 @@ is applied to find the upper limit on N\ :sub:`sig`.
   Expected upper limit -1 sigma: Nsig = 8.359388717422624
   Expected upper limit +2 sigma: Nsig = 21.644416205737596
   Expected upper limit -2 sigma: Nsig = 6.22672400601805
+  
+  >>> ul_test.plot()
 
 .. image:: https://github.com/marinang/lauztat/blob/master/docs/brazilian_plot.png
     :alt: brazilian_plot
@@ -190,6 +192,8 @@ confidence interval on the mean parameter at 68% CL.
   >>> ci_test.interval()
   Confidence interval on mean:
 	1.1890518753693258 < mean < 1.2249924635033214 at 68% C.L.
+	
+  >>> ul_test.plot()
 
 .. image:: https://github.com/marinang/lauztat/blob/master/docs/ci_1_cl_plot.png
     :alt: ci_1_cl_plot
