@@ -103,6 +103,17 @@ is the signal yield N\ :sub:`sig`. 19 ± 7 signals events are found.
   >>> from zfit.core.loss import ExtendedUnbinnedNLL, UnbinnedNLL
   >>> from zfit.minimizers.minimizer_minuit import MinuitMinimizer
 
+  >>> obs = zfit.Space('x', limits=bounds)
+  >>> mean = zfit.Parameter("mean", 1.2, 0.5, 2.0)
+  >>> sigma = zfit.Parameter("sigma", 0.1, 0.02, 0.2)
+  >>> lambda_ = zfit.Parameter("lambda",-2.0, -4.0, -1.0)
+  >>> Nsig = zfit.Parameter("Nsig", 20., 0., len(data))
+  >>> Nbkg = zfit.Parameter("Nbkg", len(data), 0., len(data)*1.1)
+
+  >>> signal = Nsig * zfit.pdf.Gauss(obs=obs, mu=mean, sigma=sigma)
+  >>> background =  Nbkg * zfit.pdf.Exponential(obs=obs, lambda_=lambda_)
+  >>> tot_model = signal + background
+
   >>> def lossbuilder(model, data, weights=None):
   >>>     loss = ExtendedUnbinnedNLL(model=model, data=data, fit_range=[obs])
   >>>     return loss
