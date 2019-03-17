@@ -73,7 +73,7 @@ and a minimizer as input to a calculator (*FrequentistCalculator* or *Asymptotic
 Discovery:
 ==========
 
-if you do a measurement to find signals S in a dataset and you find an excess this
+if you do a measurement to find signals S in a dataset and you find an excess, this
 test answers "is the data compatible with the background only ?" with:
 
 - H\ :sub:`0`: background only (S = 0)
@@ -82,58 +82,10 @@ test answers "is the data compatible with the background only ?" with:
 The test return a p-value or a significance Z. If Z ≥ 3 there is an evidence
 and if Z ≥ 5 a discovery of a signal.
 
-example:
-########
-
-Search for a gaussian peak over an exponential background. The parameter of interest
-is the signal yield N\ :sub:`sig`. 19 ± 7 signals events are found.
-
-.. image:: https://github.com/marinang/lauztat/blob/master/docs/fit_discovery_ex.png
-    :alt: fit_discovery_ex
-    :width: 45 %
-
-.. image:: https://github.com/marinang/lauztat/blob/master/docs/fit_discovery_r.png
-    :alt: fit_discovery_r
-    :width: 45 %
-
-.. code-block:: python
-
-  >>> from lauztat.parameters import POI
-  >>> from lauztat.hypotests import Discovery
-  >>> from lauztat.calculators import AsymptoticCalculator
-  >>> from lauztat.config import Config
-
-  >>> import zfit
-  >>> from zfit import ztf
-  >>> from zfit.core.loss import ExtendedUnbinnedNLL, UnbinnedNLL
-  >>> from zfit.minimizers.minimizer_minuit import MinuitMinimizer
-
-  >>> obs = zfit.Space('x', limits=bounds)
-  >>> mean = zfit.Parameter("mean", 1.2, 0.5, 2.0)
-  >>> sigma = zfit.Parameter("sigma", 0.1, 0.02, 0.2)
-  >>> lambda_ = zfit.Parameter("lambda",-2.0, -4.0, -1.0)
-  >>> Nsig = zfit.Parameter("Nsig", 20., 0., len(data))
-  >>> Nbkg = zfit.Parameter("Nbkg", len(data), 0., len(data)*1.1)
-
-  >>> signal = Nsig * zfit.pdf.Gauss(obs=obs, mu=mean, sigma=sigma)
-  >>> background =  Nbkg * zfit.pdf.Exponential(obs=obs, lambda_=lambda_)
-  >>> tot_model = signal + background
-
-  >>> def lossbuilder(model, data, weights=None):
-  >>>     loss = ExtendedUnbinnedNLL(model=model, data=data, fit_range=[obs])
-  >>>     return loss
-
-  >>> config = Config(tot_model, data_, lossbuilder, MinuitMinimizer())
-
-  >>> calc = AsymptoticCalculator(config)
-
-  >>> poinull = POI(Nsig, value=0)
-  >>> discovery_test = Discovery(poinull, calc)
-
-  >>> discovery_test.result()
-
-  p_value for the Null hypothesis = 0.0007571045219983974
-  Significance = 3.171946490372666
+Examples of significance computations for a gaussian peak over an exponential background are
+provided for the `asymptotic calculator <https://github.com/marinang/lauztat/blob/master/examples/notebooks/discovery_zfit_asy.ipynb>`__
+and the `frequentist calculator <https://github.com/marinang/lauztat/blob/master/examples/notebooks/discovery_zfit_freq.ipynb>`__
+and can be ran in `mybinder <https://mybinder.org/v2/gh/marinang/lauztat/master?filepath=examples%2Fnotebooks%2F>`__.
 
 Upper limit:
 ============
@@ -148,68 +100,25 @@ S\ :sub:`0` is adjusted to a predefined p-value, typically 5%. S\ :sub:`0` is th
 limit on the signal yield S with 95 % confidence level
 (CL = 1 - p ; p = 5 % ⟺ CL = 95%).
 
-example:
-########
-
-Search for a gaussian peak over an exponential background. The parameter of interest
-is the signal yield N\ :sub:`sig`. 5 ± 5 signals events are found. The CLs method
-is applied to find the upper limit on N\ :sub:`sig`.
-
-.. image:: https://github.com/marinang/lauztat/blob/master/docs/fit_upper_limit_ex.png
-    :alt: fit_upper_limit_ex
-
-.. code-block:: python
-
-  >>> from lauztat.hypotests import UpperLimit
-  >>> poinull = POI(Nsig, value=np.linspace(0.0, 25, 20))
-  >>> poialt = POI(Nsig, value=0)
-  >>> ul_test = UpperLimit(poinull, poialt, calc, CLs=True, qtilde=False)
-  >>> ul_test.upperlimit()
-
-  Observed upper limit: Nsig = 16.177011346146557
-  Expected upper limit: Nsig = 11.603516889161947
-  Expected upper limit +1 sigma: Nsig = 16.145671793312022
-  Expected upper limit -1 sigma: Nsig = 8.359388717422624
-  Expected upper limit +2 sigma: Nsig = 21.644416205737596
-  Expected upper limit -2 sigma: Nsig = 6.22672400601805
-
-  >>> ul_test.plot()
-
-.. image:: https://github.com/marinang/lauztat/blob/master/docs/brazilian_plot.png
-    :alt: brazilian_plot
+Examples of `CLs <https://iopscience.iop.org/article/10.1088/0954-3899/28/10/313/meta>`__ upper limits on the signal yield
+for a gaussian peak over an exponential background are
+provided for the `asymptotic calculator <https://github.com/marinang/lauztat/blob/master/examples/notebooks/upper_limit_zfit_asy.ipynb>`__
+and the `frequentist calculator <https://github.com/marinang/lauztat/blob/master/examples/notebooks/upper_limit_zfit_freq.ipynb>`__
+and can be ran in `mybinder <https://mybinder.org/v2/gh/marinang/lauztat/master?filepath=examples%2Fnotebooks%2F>`__.
 
 Confidence interval:
 ====================
 
-if you do a measurement of a parameter *e* with an estimator *ê*, given an observation
-ê\ :sub:`obs` what value of e are not rejected at a certain confidence level (typically 68%)?
+if you do a measurement of a parameter *α* with an estimator *ᾰ*, given an observation
+ᾰ\ :sub:`obs` what value of α are not rejected at a certain confidence level (typically 68%)?
 
-- H\ :sub:`0`: e\ :sub:`down` < e < e\ :sub:`up`
-- H\ :sub:`1`: e = ê\ :sub:`obs`
+- H\ :sub:`0`: α\ :sub:`down` < α < α\ :sub:`up`
+- H\ :sub:`1`: α = ᾰ\ :sub:`obs`
 
-e\ :sub:`down` and e\ :sub:`up` are adjusted such the test returns a p-value of 32 %.
+α\ :sub:`down` and α\ :sub:`up` are adjusted such the test returns a p-value of 32 %.
 
-example:
-########
-
-Measurement of the mean of a gaussian peak found to be 1.21 ± 0.02. We compute a Feldman Cousins
-confidence interval on the mean parameter at 68% CL.
-
-.. image:: https://github.com/marinang/lauztat/blob/master/docs/fit_ci_ex.png
-    :alt: fit_ci_ex
-
-.. code-block:: python
-
-  >>> from lauztat.calculators import FrequentistCalculator
-  >>> calc = FrequentistCalculator(config, ntoysnull=2000, ntoysalt=2000)
-  >>> poinull = POI(mean, value=np.linspace(1.15, 1.26, 100))
-  >>> poialt = POI(mean, value=1.21)
-  >>> ci_test = ConfidenceInterval(poinull, poialt, calc, qtilde=False)
-  >>> ci_test.interval()
-  Confidence interval on mean:
-	1.1890518753693258 < mean < 1.2249924635033214 at 68% C.L.
-
-  >>> ci_test.plot()
-
-.. image:: https://github.com/marinang/lauztat/blob/master/docs/ci_1_cl_plot.png
-    :alt: ci_1_cl_plot
+Examples of confidence intervals on the mean of a gaussian peak are
+provided for the `asymptotic calculator <https://github.com/marinang/lauztat/blob/master/examples/notebooks/confidence_interval_zfit_asy.ipynb>`__
+and the `frequentist calculator <https://github.com/marinang/lauztat/blob/master/examples/notebooks/confidence_interval_zfit_freq.ipynb>`__
+(Feldman and Cousins confidence interval `[arxiv:9711021] <https://arxiv.org/abs/physics/9711021>`__)
+and can be ran in `mybinder <https://mybinder.org/v2/gh/marinang/lauztat/master?filepath=examples%2Fnotebooks%2F>`__.
