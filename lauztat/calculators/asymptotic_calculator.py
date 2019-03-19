@@ -101,7 +101,7 @@ class AsymptoticCalculator(Calculator):
 
         sqrtqobs = np.sqrt(qobs)
 
-        needpalt = not(onesided and poialt is None)
+        needpalt = poialt is not None
 
         if needpalt:
             nll_poinull_asy = self.asymov_nll(poinull, poialt)

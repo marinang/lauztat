@@ -241,7 +241,7 @@ class FrequentistCalculator(Calculator):
 
         self.dotoys_null(poinull, poialt, qtilde)
 
-        needpalt = not(onesided and poialt is None)
+        needpalt = poialt is not None
 
         if needpalt:
             self.dotoys_alt(poialt, poinull, qtilde)
