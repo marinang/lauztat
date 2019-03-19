@@ -124,15 +124,14 @@ class AsymptoticCalculator(Calculator):
                     palt = 1. - norm.cdf(sqrtqobs + sqrtqalt)
                     palt += 1. - norm.cdf(sqrtqobs - sqrtqalt)
         else:
-            if onesided:
+            if onesided and needpalt:
                 pnull1 = 1. - norm.cdf((qobs + qalt) / (2. * sqrtqalt))
                 pnull2 = 1. - norm.cdf(sqrtqobs)
                 pnull = np.where(qobs > qalt, pnull1, pnull2)
 
-                if needpalt:
-                    palt1 = 1. - norm.cdf((qobs - qalt) / (2. * sqrtqalt))
-                    palt2 = 1. - norm.cdf(sqrtqobs - sqrtqalt)
-                    palt = np.where(qobs > qalt, palt1, palt2)
+                palt1 = 1. - norm.cdf((qobs - qalt) / (2. * sqrtqalt))
+                palt2 = 1. - norm.cdf(sqrtqobs - sqrtqalt)
+                palt = np.where(qobs > qalt, palt1, palt2)
 
         return pnull, palt
 

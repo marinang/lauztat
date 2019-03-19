@@ -59,11 +59,10 @@ def test_with_zfit():
 
     poinull = POI(mean, value=np.linspace(1.15, 1.26, 30))
     mean_bf = config.bestfit.params[mean]["value"]
-    poialt = POI(mean, value=mean_bf)
 
     def test_asy():
         calc = AsymptoticCalculator(config)
-        ci = ConfidenceInterval(poinull, poialt, calc)
+        ci = ConfidenceInterval(poinull, calc)
         ret = ci.interval()
         ci.plot()
         return ret

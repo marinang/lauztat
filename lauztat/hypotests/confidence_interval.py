@@ -4,10 +4,9 @@ import numpy as np
 
 
 class ConfidenceInterval(HypoTest):
-    def __init__(self, poinull, poialt, calculator,
-                 qtilde=False):
+    def __init__(self, poinull, calculator, qtilde=False):
 
-        super(ConfidenceInterval, self).__init__(poinull, calculator, poialt)
+        super(ConfidenceInterval, self).__init__(poinull, calculator)
 
         self._pvalues = None
         self._qtilde = qtilde
@@ -40,10 +39,8 @@ class ConfidenceInterval(HypoTest):
     def _scannll(self):
 
         poinull = self.poinull
-        poialt = self.poialt
 
-        pnull, _ = self.calculator.pvalue(poinull, poialt,
-                                          qtilde=self.qtilde,
+        pnull, _ = self.calculator.pvalue(poinull, qtilde=self.qtilde,
                                           onesided=False)
 
         return pnull
@@ -55,28 +52,39 @@ class ConfidenceInterval(HypoTest):
 
         pvalues = self.pvalues()
         poivalues = self.poinull.value
-        poialt = self.poialt
         poiname = self.poinull.name
+        poiparam = self.poinull.parameter
+        observed = self.calculator.config.bestfit.params[poiparam]["value"]
 
-        pois = interp1d(pvalues, poivalues, kind='cubic')
+        def interp(x, y):
+            kinds = iter(["cubic", "quadratic", "slinear", "linear"])
+
+            while True:
+                try:
+                    pois = interp1d(x, y, kind=next(kinds))
+                    return pois
+                except ValueError:
+                    continue
+
+        pois = interp(pvalues, poivalues)
         p_m = pvalues[poivalues < pois(np.max(pvalues))]
         p_p = pvalues[poivalues > pois(np.max(pvalues))]
         poivalues_m = poivalues[poivalues < pois(np.max(pvalues))]
         poivalues_p = poivalues[poivalues > pois(np.max(pvalues))]
-        pois_m = interp1d(p_m, poivalues_m, kind='cubic')
-        pois_p = interp1d(p_p, poivalues_p, kind='cubic')
+        pois_m = interp(p_m, poivalues_m)
+        pois_p = interp(p_p, poivalues_p)
         poi_m = float(pois_m(alpha))
         poi_p = float(pois_p(alpha))
 
         bands = {}
-        bands["observed"] = poialt.value
+        bands["observed"] = observed
         bands["band_p"] = poi_p
         bands["band_m"] = poi_m
 
         if printlevel > 0:
 
             msg = "\nConfidence interval on {0}:\n"
-            msg += "\t{band_m} < {0} < {band_p} at {1:.2f}% C.L."
+            msg += "\t{band_m} < {0} < {band_p} at {1:.1f}% C.L."
             print(msg.format(poiname, (1 - alpha)*100, **bands))
 
         return bands

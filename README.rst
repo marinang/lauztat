@@ -109,13 +109,13 @@ and can be ran in `mybinder <https://mybinder.org/v2/gh/marinang/lauztat/master?
 Confidence interval:
 ====================
 
-if you do a measurement of a parameter *α* with an estimator *ᾰ*, given an observation
+if you do a measurement of a parameter α with an estimator ᾰ, given an observation
 ᾰ\ :sub:`obs` what value of α are not rejected at a certain confidence level (typically 68%)?
 
-- H\ :sub:`0`: α\ :sub:`down` < α < α\ :sub:`up`
-- H\ :sub:`1`: α = ᾰ\ :sub:`obs`
+- H\ :sub:`0`: α ≤ α \ :sub:`down` or α ≥ α\ :sub:`up`
+- H\ :sub:`1`: α\ :sub:`down` < α < α\ :sub:`up`
 
-α\ :sub:`down` and α\ :sub:`up` are adjusted such the test returns a p-value of 32 %.
+α\ :sub:`down` and α\ :sub:`up` are adjusted such the test returns a p-value of 32%.
 
 Examples of confidence intervals on the mean of a gaussian peak are
 provided for the `asymptotic calculator <https://github.com/marinang/lauztat/blob/master/examples/notebooks/confidence_interval_zfit_asy.ipynb>`__
