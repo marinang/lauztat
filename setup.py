@@ -27,7 +27,7 @@ with open(os.path.join(here, 'README.rst'), encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 setup(name="lauztat",
-      version="1.01",
+      version="1.1.1",
       packages=find_packages(exclude=["tests"]),
       scripts=[],
       data_files=["README.rst"],
