@@ -29,7 +29,7 @@ def eval_pdf(model, x, params):
         import zfit
 
         def eval_(model, x):
-            ret = zfit.run(model.pdf(x))
+            ret = zfit.run(model.pdf(x) * model.get_yield())
             return ret
     else:
         def eval_(model, x):

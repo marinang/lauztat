@@ -107,7 +107,6 @@ class ConfidenceInterval(HypoTest):
         ax.set_xlim(np.min(poivalues), np.max(poivalues))
         ax.set_ylabel("1-CL")
         ax.set_xlabel(poiname)
-        # ax.legend(loc="best", fontsize=14)
 
         if show:
             plt.show()
