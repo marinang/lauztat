@@ -34,6 +34,7 @@ class Calculator(object):
             bestfitpoi = POI(poiparam, 0)
         else:
             bestfitpoi = POI(poiparam, bf)
+            self._obs_nll[bestfitpoi] = self.config.bestfit.fmin
 
         nll_poinull_obs = self.obs_nll(poinull)
         nll_bestfitpoi_obs = self.obs_nll(bestfitpoi)
