@@ -112,28 +112,34 @@ class AsymptoticCalculator(Calculator):
             sqrtqalt = np.sqrt(qalt)
         else:
             palt = None
+            
+        # 1 - norm.cdf(x) == norm.cdf(-x) 
 
-        if not qtilde:
-            if onesided or onesideddiscovery:
-                pnull = 1. - norm.cdf(sqrtqobs)
-                if needpalt:
-                    palt = 1. - norm.cdf(sqrtqobs - sqrtqalt)
-            else:
-                pnull = (1. - norm.cdf(sqrtqobs))*2.
-                if needpalt:
-                    palt = 1. - norm.cdf(sqrtqobs + sqrtqalt)
-                    palt += 1. - norm.cdf(sqrtqobs - sqrtqalt)
+        if onesided or onesideddiscovery:
+            pnull = 1. - norm.cdf(sqrtqobs)
+            if needpalt:
+                palt = 1. - norm.cdf(sqrtqobs - sqrtqalt)
         else:
-            if onesided and needpalt:
-                pnull1 = 1. - norm.cdf((qobs + qalt) / (2. * sqrtqalt))
-                pnull2 = 1. - norm.cdf(sqrtqobs)
-                pnull = np.where(qobs > qalt, pnull1, pnull2)
-
-                palt1 = 1. - norm.cdf((qobs - qalt) / (2. * sqrtqalt))
-                palt2 = 1. - norm.cdf(sqrtqobs - sqrtqalt)
-                palt = np.where(qobs > qalt, palt1, palt2)
+            pnull = (1. - norm.cdf(sqrtqobs))*2.
+            if needpalt:
+                palt = 1. - norm.cdf(sqrtqobs + sqrtqalt)
+                palt += 1. - norm.cdf(sqrtqobs - sqrtqalt)
+                
+        if qtilde and needpalt:
+            cond = (qobs > qalt) & (qalt > 0)
+            
+            pnull_2 = 1. - norm.cdf((qobs + qalt) / (2. * sqrtqalt))
+            palt_2 = 1. - norm.cdf((qobs - qalt) / (2. * sqrtqalt))
+            
+            if not (onesided or onesideddiscovery):
+                pnull_2 += 1. - norm.cdf(sqrtqobs) 
+                palt_2 += 1. - norm.cdf(sqrtqobs + sqrtqalt)
+                
+            pnull = np.where(cond, pnull, pnull_2)
+            palt = np.where(cond, palt, palt_2)
 
         return pnull, palt
+        
 
     def expected_pvalue(self, poinull, poialt, nsigma, CLs=True):
 
