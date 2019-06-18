@@ -136,8 +136,8 @@ class AsymptoticCalculator(Calculator):
                 pnull_2 += 1. - norm.cdf(sqrtqobs) 
                 palt_2 += 1. - norm.cdf(sqrtqobs + sqrtqalt)
                 
-            pnull = np.where(cond, pnull, pnull_2)
-            palt = np.where(cond, palt, palt_2)
+            pnull = np.where(cond, pnull_2, pnull)
+            palt = np.where(cond, palt_2, palt)
 
         return pnull, palt
 
