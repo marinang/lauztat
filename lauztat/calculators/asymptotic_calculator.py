@@ -127,7 +127,7 @@ class AsymptoticCalculator(Calculator):
                 
         if qtilde and needpalt:
             cond = (qobs > qalt) & (qalt > 0)
-            
+
             pnull_2 = 1. - norm.cdf((qobs + qalt) / (2. * sqrtqalt))
             palt_2 = 1. - norm.cdf((qobs - qalt) / (2. * sqrtqalt))
             
@@ -139,7 +139,7 @@ class AsymptoticCalculator(Calculator):
             palt = np.where(cond, palt, palt_2)
 
         return pnull, palt
-        
+
 
     def expected_pvalue(self, poinull, poialt, nsigma, CLs=True):
 
