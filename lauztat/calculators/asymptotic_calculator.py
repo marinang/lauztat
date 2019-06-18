@@ -16,7 +16,7 @@ class AsymptoticCalculator(Calculator):
     likelihood- based tests of new physics. Eur. Phys. J., C71:1–19, 2011
     """
 
-    def __init__(self, config):
+    def __init__(self, config, nbins=100):
         """
         __init__ function
         """
@@ -26,6 +26,7 @@ class AsymptoticCalculator(Calculator):
         self._asymov_dataset = {}
         self._asymov_loss = {}
         self._asymov_nll = {}
+        self._nbins = nbins
 
     def asymov_dataset(self, poi):
         if poi not in self._asymov_dataset.keys():
@@ -57,7 +58,7 @@ class AsymptoticCalculator(Calculator):
 
             for m in models:
                 space = m.space
-                asydatasets.append(generate_asymov_dataset(m, values, space))
+                asydatasets.append(generate_asymov_dataset(m, values, space, self._nbins))
 
             self._asymov_dataset[poi] = asydatasets
 
