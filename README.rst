@@ -45,7 +45,7 @@ in a frequentist approach (using pseudo-experiments) or using asymptotic formula
 
 lauztat has been developed at EPFL, Lausanne Switzerland (laus' or lauz is how the cool kids call Lausanne).
 
-**The project is currently being ported and slighty redesigned to `scikit-hep/scikit-stats <https://github.com/scikit-hep/scikit-stats>`__ package**.
+**The project is currently being ported and slighty redesigned to** `scikit-hep/scikit-stats <https://github.com/scikit-hep/scikit-stats>`__ **package**.
 
 Installation
 ------------
